@@ -26,6 +26,10 @@ class MathCanvasEditorData {
 class MathCanvasEquationData {
   late final Element rootElement;
 
+  //position of the anchor inside the editor
+  double x = 0;
+  double y = 0;
+
   MathCanvasEquationData(this.rootElement);
 
   final List<Function()> _repaint = [];
