@@ -1,6 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:math_canvas/editor/system/canvas_data.dart';
-import 'package:math_canvas/editor/system/event_system.dart';
+import 'package:flutter/services.dart' show KeyDownEvent, KeyUpEvent;
+import '../system/canvas_data.dart';
+import '../system/event_system.dart';
+import '../system/events/editor_mouse_event.dart';
 
 class MathCanvasWidget extends StatefulWidget {
   const MathCanvasWidget(this.width, this.height, {Key? key}) : super(key: key);
@@ -11,15 +14,21 @@ class MathCanvasWidget extends StatefulWidget {
   State<MathCanvasWidget> createState() => _MathCanvasWidgetState();
 }
 
-class _MathCanvasWidgetState extends State<MathCanvasWidget> {
+class _MathCanvasWidgetState extends State<MathCanvasWidget> with TickerProviderStateMixin{
   late EventSystem _eventSystem;
 
   @override
   void initState() {
-    _eventSystem = EventSystem();
+    super.initState();
+    AnimationController(vsync: this, duration: Duration(seconds: 1)).forward();
+
+    _eventSystem = EventSystem(this);
+
+    _eventSystem.addEventStack(
+      EventStack()..addEvent(EditorDragEvent()),
+    );
     _eventSystem.mathCanvasData.editorData
         .attachDataChangedListener(() => setState(() {}));
-    super.initState();
   }
 
   @override
@@ -28,34 +37,78 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget> {
       color: Colors.white,
       width: widget.width,
       height: widget.height,
-      child: Stack(
-        children: [
-          CustomPaint(
-            size: Size(widget.width, widget.height),
-            painter: _EditorGridBackground(
-                _eventSystem.mathCanvasData.editorData.x,
-                _eventSystem.mathCanvasData.editorData.y,
-                _eventSystem.mathCanvasData.editorData.scale),
-          ),
-          ..._eventSystem.mathCanvasData.equationData.map((eq) {
-            return Positioned(
-              top: ((eq.x - (eq.rootElement.anchorPoint.x)) -
-                      _eventSystem.mathCanvasData.editorData.x) *
-                  _eventSystem.mathCanvasData.editorData.scale,
-              left: (eq.y - (eq.rootElement.anchorPoint.y)) -
-                  (_eventSystem.mathCanvasData.editorData.y) *
-                      _eventSystem.mathCanvasData.editorData.scale,
-              child: Transform.scale(
-                origin: const Offset(0, 0),
-                scale: _eventSystem.mathCanvasData.editorData.scale,
-                child: CustomPaint(
-                  size: Size(eq.rootElement.width, eq.rootElement.height),
-                  painter: _MathCanvasEquationPainter(eq),
+      child: Listener(
+        onPointerSignal: (event) {
+          if (event is PointerScrollEvent) {
+            _eventSystem.mouseWheel(event.scrollDelta, event.localPosition.dx,
+                event.localPosition.dy);
+          }
+        },
+        onPointerHover: (event) {
+          _eventSystem.mouseMove(
+              event.localPosition.dx, event.localPosition.dy);
+        },
+        onPointerMove: (event) {
+          _eventSystem.mouseMove(
+              event.localPosition.dx, event.localPosition.dy);
+        },
+        onPointerDown: (event) {
+          _eventSystem.mouseDown(
+              event.localPosition.dx, event.localPosition.dy);
+        },
+        onPointerUp: (event) {
+          _eventSystem.mouseUp(event.localPosition.dx, event.localPosition.dy);
+        },
+        child: KeyboardListener(
+          focusNode: FocusNode(),
+          autofocus: true,
+          onKeyEvent: (keyEvent) {
+            if (keyEvent is KeyDownEvent) {
+              _eventSystem.keyDown(keyEvent.physicalKey);
+            } else if (keyEvent is KeyUpEvent) {
+              _eventSystem.keyUp(keyEvent.physicalKey);
+            }
+          },
+          child: MouseRegion(
+            onEnter: (e) {
+              _eventSystem.mouseEnterEditor();
+            },
+            onExit: (e) {
+              _eventSystem.mouseExistEditor();
+            },
+            child: Stack(
+              children: [
+                CustomPaint(
+                  size: Size(widget.width, widget.height),
+                  painter: _EditorGridBackground(
+                      _eventSystem.mathCanvasData.editorData.x,
+                      _eventSystem.mathCanvasData.editorData.y,
+                      _eventSystem.mathCanvasData.editorData.scale),
                 ),
-              ),
-            );
-          }),
-        ],
+                ..._eventSystem.mathCanvasData.equationData.map((eq) {
+                  return Positioned(
+                    top: ((eq.x - (eq.rootElement.anchorPoint.x)) -
+                            _eventSystem.mathCanvasData.editorData.x) *
+                        _eventSystem.mathCanvasData.editorData.scale,
+                    left: (eq.y - (eq.rootElement.anchorPoint.y)) -
+                        (_eventSystem.mathCanvasData.editorData.y) *
+                            _eventSystem.mathCanvasData.editorData.scale,
+                    child: Transform.scale(
+                      origin: const Offset(0, 0),
+                      scale: _eventSystem.mathCanvasData.editorData.scale,
+                      child: CustomPaint(
+                        size: Size(eq.rootElement.width, eq.rootElement.height),
+                        painter: _MathCanvasEquationPainter(eq),
+                      ),
+                    ),
+                  );
+                }),
+                ...(_eventSystem.mathCanvasData.editorData
+                    .getAdditionalWidget()),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -85,7 +138,7 @@ class _EditorGridBackground extends CustomPainter {
       canvas.drawLine(Offset(x_s, 0), Offset(x_s, size.height), p);
       x_s += newInterval;
     }
-    while (y_s <= size.width) {
+    while (y_s <= size.height) {
       canvas.drawLine(Offset(0, y_s), Offset(size.width, y_s), p);
       y_s += newInterval;
     }

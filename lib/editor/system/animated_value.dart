@@ -42,9 +42,10 @@ class AnimatedValue<T> {
   }
 
   set value(T v) {
+    T pre = value;
     _animationController.reset();
     _tweenAnimation =
-        Tween<T>(begin: value, end: v).animate(_animationController);
+        Tween<T>(begin: pre, end: v).animate(_animationController);
     _animationController.forward();
   }
 
@@ -54,4 +55,8 @@ class AnimatedValue<T> {
   }
 
   T get trueValue => _trueValue;
+
+  void dispose(){
+    _animationController.dispose();
+  }
 }

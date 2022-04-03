@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Offset, Widget;
 import 'package:math_canvas/editor/system/element_system.dart';
 
 class MathCanvasData {
@@ -7,10 +8,25 @@ class MathCanvasData {
 
 class MathCanvasEditorData {
   final List<Function()> _dataChanged = [];
+  final List<Widget> _additionalWidget = [];
 
   void attachDataChangedListener(Function() onDataChanged) {
     _dataChanged.add(onDataChanged);
   }
+  //returns id
+  int attachWidget(Widget widget){
+    _additionalWidget.add(widget);
+    return _additionalWidget.length - 1;
+  }
+  void detachWidget(int id){
+    _additionalWidget.removeAt(id);
+  }
+  void updateWidget(int id, Widget widget){
+    _additionalWidget.insert(id, widget);
+    _additionalWidget.removeAt(id + 1);
+  }
+
+  List<Widget> getAdditionalWidget() => _additionalWidget;
 
   double x = 0;
   double y = 0;

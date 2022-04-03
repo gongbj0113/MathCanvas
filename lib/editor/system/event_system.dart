@@ -1,3 +1,7 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:math_canvas/editor/system/canvas_data.dart';
 
@@ -7,6 +11,7 @@ enum UserEventType {
   mouseMove,
   mouseDown,
   mouseUp,
+  mouseWheel,
   keyDown,
   keyUp
 }
@@ -15,9 +20,15 @@ class UserEventData {
   UserEventType userEventType;
   double? dx;
   double? dy;
+  Offset? scrollDelta;
   PhysicalKeyboardKey? key;
 
-  UserEventData({required this.userEventType, this.dx, this.dy, this.key});
+  UserEventData(
+      {required this.userEventType,
+      this.dx,
+      this.dy,
+      this.scrollDelta,
+      this.key});
 
   void sendEvent(UserEventReceiver userEventReceiver) {
     if (userEventType == UserEventType.mouseEnterEditor) {
@@ -30,6 +41,8 @@ class UserEventData {
       userEventReceiver.mouseMove(dx!, dy!);
     } else if (userEventType == UserEventType.mouseUp) {
       userEventReceiver.mouseUp(dx!, dy!);
+    } else if (userEventType == UserEventType.mouseWheel) {
+      userEventReceiver.mouseWheel(scrollDelta!, dx!, dy!);
     } else if (userEventType == UserEventType.keyDown) {
       userEventReceiver.keyDown(key!);
     } else if (userEventType == UserEventType.keyUp) {
@@ -49,6 +62,8 @@ class UserEventReceiver {
 
   void mouseUp(double dx, double dy) {}
 
+  void mouseWheel(Offset scrollDelta, double dx, double dy) {}
+
   void keyDown(PhysicalKeyboardKey key) {}
 
   void keyUp(PhysicalKeyboardKey key) {}
@@ -59,7 +74,9 @@ abstract class Event extends UserEventReceiver {
   late final EventStack _parentStack;
   bool _initialized = false;
 
-  Event(this._parentStack);
+  MathCanvasData get mathCanvasData => _parentStack._eventSystem.mathCanvasData;
+
+  Event();
 
   void giveResult(dynamic result) {
     _postEventStackResult = result;
@@ -74,6 +91,7 @@ abstract class Event extends UserEventReceiver {
   }
 
   void startNewEventStack(EventStack eventStack) {
+    eventStack._starter = this;
     _parentStack.startNewEventStack(eventStack);
   }
 
@@ -97,14 +115,18 @@ abstract class Event extends UserEventReceiver {
     _parentStack.startNewDataEvent(dataEvent);
   }
 
-  List<T> findEventsInEventStack<T>(){
+  List<T> findEventsInEventStack<T>() {
     return _parentStack.findEventsInEventStack<T>();
   }
+
+  TickerProvider getTickerProvider() => _parentStack.getTickerProvider();
 
   // Called when Upper EventStack was closed/
   void postEventStackClosed() {}
 
   bool get isInitialized => _initialized;
+  double get lastMouseX => _parentStack.lastMx;
+  double get lastMouseY => _parentStack.lastMy;
 
   void initialize() {
     _initialized = true;
@@ -116,15 +138,15 @@ abstract class Event extends UserEventReceiver {
 }
 
 class EventStack extends UserEventReceiver {
-  final EventSystem _eventSystem;
-  final Event? _starter; // The Event started this event stack.
+  late final EventSystem _eventSystem;
+  Event? _starter; // The Event started this event stack.
   UserEventData? curUserEvent;
 
-  EventStack(this._eventSystem, this._starter);
 
   final _events = <Event>[];
 
   void addEvent(Event event) {
+    event._parentStack = this;
     _events.add(event);
     event.initialize();
   }
@@ -162,13 +184,15 @@ class EventStack extends UserEventReceiver {
     _starter!.postEventStackClosed();
   }
 
-  List<T> findEventsInEventStack<T>(){
+  List<T> findEventsInEventStack<T>() {
     List<T> list = [];
-    for(Event e in _events){
-      if(e is T) list.add(e as T);
+    for (Event e in _events) {
+      if (e is T) list.add(e as T);
     }
     return list;
   }
+
+  TickerProvider getTickerProvider() => _eventSystem.tickerProvider;
 
   void initialize() {
     for (var element in _events) {
@@ -201,10 +225,15 @@ class EventStack extends UserEventReceiver {
     curUserEvent = null;
   }
 
+  double lastMx = 0;
+  double lastMy = 0;
+
   @override
   void mouseMove(double dx, double dy) {
     curUserEvent =
         UserEventData(userEventType: UserEventType.mouseMove, dx: dx, dy: dy);
+    lastMx = dx;
+    lastMy = dy;
     for (var element in _events) {
       element.mouseMove(dx, dy);
     }
@@ -215,6 +244,8 @@ class EventStack extends UserEventReceiver {
   void mouseDown(double dx, double dy) {
     curUserEvent =
         UserEventData(userEventType: UserEventType.mouseDown, dx: dx, dy: dy);
+    lastMx = dx;
+    lastMy = dy;
     for (var element in _events) {
       element.mouseDown(dx, dy);
     }
@@ -225,8 +256,25 @@ class EventStack extends UserEventReceiver {
   void mouseUp(double dx, double dy) {
     curUserEvent =
         UserEventData(userEventType: UserEventType.mouseUp, dx: dx, dy: dy);
+    lastMx = dx;
+    lastMy = dy;
     for (var element in _events) {
       element.mouseUp(dx, dy);
+    }
+    curUserEvent = null;
+  }
+
+  @override
+  void mouseWheel(Offset scrollDelta, double dx, double dy) {
+    curUserEvent = UserEventData(
+        userEventType: UserEventType.mouseWheel,
+        scrollDelta: scrollDelta,
+        dx: dx,
+        dy: dy);
+    lastMx = dx;
+    lastMy = dy;
+    for (var element in _events) {
+      element.mouseWheel(scrollDelta, dx, dy);
     }
     curUserEvent = null;
   }
@@ -258,6 +306,10 @@ abstract class DataEvent {
 }
 
 class EventSystem extends UserEventReceiver {
+  TickerProvider tickerProvider;
+
+  EventSystem(this.tickerProvider);
+
   final _eventStack = <EventStack>[];
   final MathCanvasData mathCanvasData = MathCanvasData();
 
@@ -309,8 +361,8 @@ class EventSystem extends UserEventReceiver {
     }
   }
 
-
   void addEventStack(EventStack eventStack) {
+    eventStack._eventSystem = this;
     _eventStack.add(eventStack);
     eventStack.initialize();
   }
@@ -358,6 +410,11 @@ class EventSystem extends UserEventReceiver {
   @override
   void mouseUp(double dx, double dy) {
     getTopEventStack().mouseUp(dx, dy);
+  }
+
+  @override
+  void mouseWheel(Offset scrollDelta, double dx, double dy) {
+    getTopEventStack().mouseWheel(scrollDelta, dx, dy);
   }
 
   @override

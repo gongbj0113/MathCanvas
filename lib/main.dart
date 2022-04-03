@@ -72,26 +72,18 @@ class _MyHomePageState extends State<MyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    return RawKeyboardListener(
-      focusNode: FocusNode(),
-      autofocus: true,
-      onKey: (event) {
-        print(event.data.physicalKey);
-        //print(event.toString());
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-        ),
-        body: Center(
-          child: LayoutBuilder(
-            builder: ((context, constraints) {
-              return MathCanvasWidget(
-                  constraints.maxWidth, constraints.maxHeight);
-            }),
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: LayoutBuilder(
+          builder: ((context, constraints) {
+            return MathCanvasWidget(
+                constraints.maxWidth, constraints.maxHeight);
+          }),
         ),
       ),
     );
