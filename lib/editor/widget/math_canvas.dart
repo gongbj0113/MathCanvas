@@ -1,9 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show KeyDownEvent, KeyUpEvent;
+
 import '../system/canvas_data.dart';
 import '../system/event_system.dart';
-import '../system/events/editor_mouse_event.dart';
+import '../system/events/initial_stack/editor_initial_eventStack.dart';
 
 class MathCanvasWidget extends StatefulWidget {
   const MathCanvasWidget(this.width, this.height, {Key? key}) : super(key: key);
@@ -14,7 +15,8 @@ class MathCanvasWidget extends StatefulWidget {
   State<MathCanvasWidget> createState() => _MathCanvasWidgetState();
 }
 
-class _MathCanvasWidgetState extends State<MathCanvasWidget> with TickerProviderStateMixin{
+class _MathCanvasWidgetState extends State<MathCanvasWidget>
+    with TickerProviderStateMixin {
   late EventSystem _eventSystem;
 
   @override
@@ -23,10 +25,8 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget> with TickerProvider
     AnimationController(vsync: this, duration: Duration(seconds: 1)).forward();
 
     _eventSystem = EventSystem(this);
+    _eventSystem.addEventStack(EditorInitialEventStack());
 
-    _eventSystem.addEventStack(
-      EventStack()..addEvent(EditorDragEvent()),
-    );
     _eventSystem.mathCanvasData.editorData
         .attachDataChangedListener(() => setState(() {}));
   }
@@ -85,6 +85,8 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget> with TickerProvider
                       _eventSystem.mathCanvasData.editorData.y,
                       _eventSystem.mathCanvasData.editorData.scale),
                 ),
+                ...(_eventSystem.mathCanvasData.editorData
+                    .getAdditionalWidgetBackground()),
                 ..._eventSystem.mathCanvasData.equationData.map((eq) {
                   return Positioned(
                     top: ((eq.x - (eq.rootElement.anchorPoint.x)) -
@@ -104,7 +106,7 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget> with TickerProvider
                   );
                 }),
                 ...(_eventSystem.mathCanvasData.editorData
-                    .getAdditionalWidget()),
+                    .getAdditionalWidgetForeground()),
               ],
             ),
           ),

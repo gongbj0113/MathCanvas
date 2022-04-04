@@ -119,6 +119,11 @@ abstract class Event extends UserEventReceiver {
     return _parentStack.findEventsInEventStack<T>();
   }
 
+  void addComponent(EventSystemComponent component) => _parentStack.addComponent(component);
+  void removeComponent(EventSystemComponent component)=> _parentStack.removeComponent(component);
+  List<T> findComponentsAsType<T>() => _parentStack.findComponentsAsType<T>();
+  T? findComponentAsType<T>() => _parentStack.findComponentAsType<T>();
+
   TickerProvider getTickerProvider() => _parentStack.getTickerProvider();
 
   // Called when Upper EventStack was closed/
@@ -192,6 +197,11 @@ class EventStack extends UserEventReceiver {
     return list;
   }
 
+  void addComponent(EventSystemComponent component) => _eventSystem.addComponent(component);
+  void removeComponent(EventSystemComponent component)=> _eventSystem.removeComponent(component);
+  List<T> findComponentsAsType<T>() => _eventSystem.findComponentsAsType<T>();
+  T? findComponentAsType<T>() => _eventSystem.findComponentAsType<T>();
+
   TickerProvider getTickerProvider() => _eventSystem.tickerProvider;
 
   void initialize() {
@@ -225,15 +235,13 @@ class EventStack extends UserEventReceiver {
     curUserEvent = null;
   }
 
-  double lastMx = 0;
-  double lastMy = 0;
+  double get lastMx => _eventSystem.lastMx;
+  double get lastMy => _eventSystem.lastMy;
 
   @override
   void mouseMove(double dx, double dy) {
     curUserEvent =
         UserEventData(userEventType: UserEventType.mouseMove, dx: dx, dy: dy);
-    lastMx = dx;
-    lastMy = dy;
     for (var element in _events) {
       element.mouseMove(dx, dy);
     }
@@ -244,8 +252,6 @@ class EventStack extends UserEventReceiver {
   void mouseDown(double dx, double dy) {
     curUserEvent =
         UserEventData(userEventType: UserEventType.mouseDown, dx: dx, dy: dy);
-    lastMx = dx;
-    lastMy = dy;
     for (var element in _events) {
       element.mouseDown(dx, dy);
     }
@@ -256,8 +262,6 @@ class EventStack extends UserEventReceiver {
   void mouseUp(double dx, double dy) {
     curUserEvent =
         UserEventData(userEventType: UserEventType.mouseUp, dx: dx, dy: dy);
-    lastMx = dx;
-    lastMy = dy;
     for (var element in _events) {
       element.mouseUp(dx, dy);
     }
@@ -271,8 +275,6 @@ class EventStack extends UserEventReceiver {
         scrollDelta: scrollDelta,
         dx: dx,
         dy: dy);
-    lastMx = dx;
-    lastMy = dy;
     for (var element in _events) {
       element.mouseWheel(scrollDelta, dx, dy);
     }
@@ -305,18 +307,57 @@ abstract class DataEvent {
   void undo(MathCanvasData mathCanvasData);
 }
 
+abstract class EventSystemComponent extends UserEventReceiver{
+  late EventSystem _eventSystem;
+  MathCanvasData get mathCanvasData => _eventSystem.mathCanvasData;
+
+  void initialize();
+
+  TickerProvider getTickerProvider() => _eventSystem.tickerProvider;
+  double get lastMx => _eventSystem.lastMx;
+  double get lastMy => _eventSystem.lastMy;
+
+  void dispose(){}
+}
+
 class EventSystem extends UserEventReceiver {
   TickerProvider tickerProvider;
 
   EventSystem(this.tickerProvider);
 
   final _eventStack = <EventStack>[];
+  final _components = <EventSystemComponent>[];
   final MathCanvasData mathCanvasData = MathCanvasData();
+
+  void addComponent(EventSystemComponent component){
+    component._eventSystem = this;
+    _components.add(component);
+    component.initialize();
+  }
+  void removeComponent(EventSystemComponent component){
+    component.dispose();
+    _components.remove(component);
+  }
+
+  List<T> findComponentsAsType<T>() {
+    List<T> list = [];
+    for (EventSystemComponent e in _components) {
+      if (e is T) list.add(e as T);
+    }
+    return list;
+  }
+  T? findComponentAsType<T>() {
+    for (EventSystemComponent e in _components) {
+      if (e is T) return (e as T);
+    }
+    return null;
+  }
 
   //Redo & Undo
   final _dataEvent = <DataEvent>[];
   bool _availableRedo = false;
   int _curIndex = 0;
+
 
   bool isRedoAvailable() => _availableRedo;
 
@@ -387,43 +428,78 @@ class EventSystem extends UserEventReceiver {
   }
 
   // Send Events to the Top EventStack
+  double lastMx = 0;
+  double lastMy = 0;
+
   @override
   void mouseEnterEditor() {
     getTopEventStack().mouseEnterEditor();
+    for(EventSystemComponent esc in _components){
+      esc.mouseEnterEditor();
+    }
   }
 
   @override
   void mouseExistEditor() {
     getTopEventStack().mouseExistEditor();
+    for(EventSystemComponent esc in _components){
+      esc.mouseExistEditor();
+    }
   }
 
   @override
   void mouseMove(double dx, double dy) {
+    lastMx = dx;
+    lastMy = dy;
     getTopEventStack().mouseMove(dx, dy);
+    for(EventSystemComponent esc in _components){
+      esc.mouseMove(dx, dy);
+    }
   }
 
   @override
   void mouseDown(double dx, double dy) {
+    lastMx = dx;
+    lastMy = dy;
     getTopEventStack().mouseDown(dx, dy);
+    for(EventSystemComponent esc in _components){
+      esc.mouseDown(dx, dy);
+    }
   }
 
   @override
   void mouseUp(double dx, double dy) {
+    lastMx = dx;
+    lastMy = dy;
     getTopEventStack().mouseUp(dx, dy);
+    for(EventSystemComponent esc in _components){
+      esc.mouseUp(dx, dy);
+    }
   }
 
   @override
   void mouseWheel(Offset scrollDelta, double dx, double dy) {
+    lastMx = dx;
+    lastMy = dy;
     getTopEventStack().mouseWheel(scrollDelta, dx, dy);
+    for(EventSystemComponent esc in _components){
+      esc.mouseWheel(scrollDelta, dx, dy);
+    }
   }
 
   @override
   void keyDown(PhysicalKeyboardKey key) {
     getTopEventStack().keyDown(key);
+    for(EventSystemComponent esc in _components){
+      esc.keyDown(key);
+    }
   }
 
   @override
   void keyUp(PhysicalKeyboardKey key) {
     getTopEventStack().keyUp(key);
+    for(EventSystemComponent esc in _components){
+      esc.keyUp(key);
+    }
   }
 }

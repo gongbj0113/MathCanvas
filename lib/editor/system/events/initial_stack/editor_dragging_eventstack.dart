@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
 
-import '../animated_value.dart';
+import '../../animated_value.dart';
+import '../../components/scale_indicator.dart';
 
 class EditorDraggingEventStack extends EventStack {
   double preMx;
@@ -53,41 +54,38 @@ class _EditorDraggingEvent extends Event {
     mathCanvasData.editorData.finishDataChange();
   }
 
-  Widget buildScaleIndicator(double scale, double mx, double my) {
-    return Positioned(
-      left: mx - 40,
-      top: my - 35,
-      child: Opacity(
-        opacity:
-            scaleIndicatorOpacity != null ? scaleIndicatorOpacity!.value : 0.0,
-        child: Container(
-          decoration: const ShapeDecoration(
-            shape: StadiumBorder(),
-            color: Colors.black54,
-          ),
-          width: 80,
-          height: 30,
-          alignment: Alignment.center,
-          child: Text(
-            "${(scale * 100).toInt()}%",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  int id = -1;
-  AnimatedValue<double>? scaleIndicatorOpacity;
+  // Widget buildScaleIndicator(double scale) {
+  //   return Opacity(
+  //     opacity:
+  //         scaleIndicatorOpacity != null ? scaleIndicatorOpacity!.value : 0.0,
+  //     child: Container(
+  //       decoration: const ShapeDecoration(
+  //         shape: StadiumBorder(),
+  //         color: Colors.black54,
+  //       ),
+  //       width: 80,
+  //       height: 30,
+  //       alignment: Alignment.center,
+  //       child: Text(
+  //         "${(scale * 100).toInt()}%",
+  //         style: const TextStyle(
+  //           color: Colors.white,
+  //           fontSize: 16,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+  //
+  // int id = -1;
+  // AnimatedValue<double>? scaleIndicatorOpacity;
 
   @override
   void mouseWheel(Offset scrollDelta, double dx, double dy) {
     //Todo : make scaling from center origin.
     mathCanvasData.editorData.scale -= scrollDelta.dy / 1000;
-
+    findComponentAsType<ComponentScaleIndicator>()!.updateScaleIndicator();
+    /*
     if (id == -1) {
       scaleIndicatorOpacity = AnimatedValue<double>(
           initialValue: 0.01,
@@ -100,25 +98,33 @@ class _EditorDraggingEvent extends Event {
         if (scaleIndicatorOpacity!.value == 0.0) {
           scaleIndicatorOpacity!.dispose();
           scaleIndicatorOpacity = null;
-          mathCanvasData.editorData.detachWidget(id);
+          mathCanvasData.editorData.detachWidgetForeground(id);
           id = -1;
         } else {
-          mathCanvasData.editorData.updateWidget(
-              id,
-              buildScaleIndicator(
-                  mathCanvasData.editorData.scale, lastMouseX, lastMouseY));
+          mathCanvasData.editorData.updateWidgetForeground(
+            id,
+            buildScaleIndicator(mathCanvasData.editorData.scale),
+            Offset(lastMouseX - 40, lastMouseY - 35),
+            localPosition: false,
+          );
         }
 
         mathCanvasData.editorData.finishDataChange();
       });
-      id = mathCanvasData.editorData.attachWidget(
-        buildScaleIndicator(mathCanvasData.editorData.scale, dx, dy),
+      id = mathCanvasData.editorData.attachWidgetForeground(
+        buildScaleIndicator(mathCanvasData.editorData.scale),
+        Offset(dx - 40, dy - 35),
+        localPosition: false,
       );
     } else {
-      mathCanvasData.editorData.updateWidget(
-          id, buildScaleIndicator(mathCanvasData.editorData.scale, dx, dy));
+      mathCanvasData.editorData.updateWidgetForeground(
+        id,
+        buildScaleIndicator(mathCanvasData.editorData.scale),
+        Offset(dx - 40, dy - 35),
+        localPosition: false,
+      );
     }
-    scaleIndicatorOpacity!.value = 1.0;
+    scaleIndicatorOpacity!.value = 1.0;*/
     mathCanvasData.editorData.finishDataChange();
     print(scrollDelta);
   }
