@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:math_canvas/editor/system/element_system.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
+import 'package:math_canvas/editor/system/events/data/equation_create_new.dart';
 import 'package:math_canvas/editor/system/events/initial_stack/editor_scaling_event.dart';
 
 class EditorAddNewEquationEventStack extends EventStack {
@@ -14,6 +16,7 @@ class EditorAddNewEquationEventStack extends EventStack {
   void initialize() {
     addEvent(_EditorAddNewEquationEvent(editorX, editorY, fontSize));
     addEvent(EditorScalingEvent());
+    //startNewEventStack(EditorMovingEventStack(editorX, editorY));
     super.initialize();
   }
 }
@@ -31,7 +34,7 @@ class _EditorAddNewEquationEvent extends Event {
     return Container(
       color: Colors.red,
       width: 3,
-      height: 8,
+      height: fontSize,
     );
   }
 
@@ -39,7 +42,7 @@ class _EditorAddNewEquationEvent extends Event {
   void initialize() {
     id = mathCanvasData.editorData.attachWidgetForeground(
       newCursorWidget(),
-      Offset(editorX, editorY),
+      Offset(editorX - 1.5, editorY - fontSize / 2),
       local: true,
     );
     mathCanvasData.editorData.finishDataChange();
@@ -49,6 +52,7 @@ class _EditorAddNewEquationEvent extends Event {
   @override
   void dispose() {
     mathCanvasData.editorData.detachWidgetForeground(id);
+    mathCanvasData.editorData.finishDataChange();
     super.dispose();
   }
 
@@ -103,8 +107,16 @@ class _EditorAddNewEquationEvent extends Event {
             (validKeys.contains(key.debugName)) // other symbols
         ) {
       //create new Equation
-
-    }else{
+      startNewDataEvent(
+        DataEventCreateEquation(
+          Offset(editorX, editorY),
+          initialElement: ElementSymbol(
+            elementFontOption: ElementFontOption(),
+            content: key.debugName ?? "?",
+          ),
+        ),
+      );
+    } else {
       closeEventStack(false);
       return;
     }

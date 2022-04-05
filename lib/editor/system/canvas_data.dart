@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart' show Offset, Positioned, Widget;
+import 'package:flutter/material.dart'
+    show Alignment, Offset, Transform, Widget;
 import 'package:math_canvas/editor/system/element_system.dart';
 
 class MathCanvasData {
@@ -35,17 +36,22 @@ class MathCanvasEditorData {
   }
 
   Widget _buildAdditionalWidgetGlobal(Widget widget, Offset position) =>
-      Positioned(
-        left: position.dx,
-        top: position.dy,
+      Transform.translate(
+        offset: Offset(position.dx, position.dy),
         child: widget,
       );
 
   Widget _buildAdditionalWidgetLocal(Widget widget, Offset position) =>
-      Positioned(
-        left: (position.dx - x) * scale,
-        top: (position.dy - y) * scale,
-        child: widget,
+      Transform.translate(
+        offset: Offset(
+          (position.dx - x) * scale,
+          (position.dy - y) * scale,
+        ),
+        child: Transform.scale(
+          alignment: Alignment.topLeft,
+          scale: scale,
+          child: widget,
+        ),
       );
 
   //returns id
@@ -57,8 +63,8 @@ class MathCanvasEditorData {
   }
 
   void detachWidgetForeground(int id) {
-    for(int i = 0; i < _additionalWidgetForeground.length; i ++){
-      if(_additionalWidgetForeground[i].id == id){
+    for (int i = 0; i < _additionalWidgetForeground.length; i++) {
+      if (_additionalWidgetForeground[i].id == id) {
         _additionalWidgetForeground.removeAt(i);
         return;
       }
@@ -68,9 +74,10 @@ class MathCanvasEditorData {
 
   void updateWidgetForeground(int id, Widget widget, Offset position,
       {bool local = true}) {
-    for(int i = 0; i < _additionalWidgetForeground.length; i ++){
-      if(_additionalWidgetForeground[i].id == id){
-        _additionalWidgetForeground[i] = _AdditionalWidget(id, widget, position, local);
+    for (int i = 0; i < _additionalWidgetForeground.length; i++) {
+      if (_additionalWidgetForeground[i].id == id) {
+        _additionalWidgetForeground[i] =
+            _AdditionalWidget(id, widget, position, local);
         return;
       }
     }
@@ -85,8 +92,8 @@ class MathCanvasEditorData {
   }
 
   void detachWidgetBackground(int id) {
-    for(int i = 0; i < _additionalWidgetBackground.length; i ++){
-      if(_additionalWidgetBackground[i].id == id){
+    for (int i = 0; i < _additionalWidgetBackground.length; i++) {
+      if (_additionalWidgetBackground[i].id == id) {
         _additionalWidgetBackground.removeAt(i);
         return;
       }
@@ -96,9 +103,10 @@ class MathCanvasEditorData {
 
   void updateWidgetBackground(int id, Widget widget, Offset position,
       {bool local = true}) {
-    for(int i = 0; i < _additionalWidgetBackground.length; i ++){
-      if(_additionalWidgetBackground[i].id == id){
-        _additionalWidgetBackground[i] = _AdditionalWidget(id, widget, position, local);
+    for (int i = 0; i < _additionalWidgetBackground.length; i++) {
+      if (_additionalWidgetBackground[i].id == id) {
+        _additionalWidgetBackground[i] =
+            _AdditionalWidget(id, widget, position, local);
         return;
       }
     }
@@ -129,23 +137,24 @@ class MathCanvasEditorData {
 }
 
 class MathCanvasEquationData {
-  late final Element rootElement;
+  final Element rootElement;
 
   //position of the anchor inside the editor
-  double x = 0;
-  double y = 0;
+  double x;
+  double y;
 
-  MathCanvasEquationData(this.rootElement);
+  MathCanvasEquationData(this.rootElement, {this.x = 0, this.y = 0});
 
-  final List<Function()> _repaint = [];
+  void Function()? _repaint;
 
-  void attachDataChangedListener(Function() onRepaintRequest) {
-    _repaint.add(onRepaintRequest);
+  void attachDataChangedListener(void Function() onRepaintRequest) {
+    _repaint = onRepaintRequest;
   }
 
   void requestRepaint() {
-    for (var f in _repaint) {
-      f();
+    rootElement.layout();
+    if (_repaint != null) {
+      _repaint!();
     }
   }
 }

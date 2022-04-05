@@ -1,8 +1,9 @@
 import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:math_canvas/editor/system/components/cursor_component.dart';
+import 'package:tuple/tuple.dart';
 
-import 'package:flutter/painting.dart';
-
-enum ElementType { basic, bigOperation, accent, layout }
+enum ElementType { symbol, bigOperation, accent, layout }
 
 enum ElementAnchor {
   cornerLeftTop,
@@ -30,15 +31,15 @@ class ElementFontOption {
   double size;
   Color color;
 
-  ElementFontOption(this.size, this.color);
+  ElementFontOption({this.size = 18, this.color = Colors.black});
 }
 
 class ChildrenElement {
-  ChildrenElement(this.children);
+  ChildrenElement(this.type, {this.anchor = ElementAnchor.none, this.children});
 
-  final Element? children;
-  ElementAnchor anchor = ElementAnchor.none;
-  ChildrenElementType type = ChildrenElementType.optional;
+  Element? children;
+  ElementAnchor anchor;
+  ChildrenElementType type;
 
   late Point<double> position;
 
@@ -99,11 +100,187 @@ class ChildrenElement {
   }
 }
 
-class Element {
-  Element({required this.content, required this.elementFontOption, this.type = ElementType.basic});
+class ElementSymbol extends Element {
+  ElementSymbol(
+      {required this.content, required ElementFontOption elementFontOption})
+      : super(type: ElementType.symbol, elementFontOption: elementFontOption);
 
-  ElementType type;
   String content;
+
+  @override
+  Tuple3<double, double, Point<double>> measureLayout() {
+    var span = TextSpan(
+      text: content,
+      style: TextStyle(
+        color: elementFontOption.color,
+        fontSize: elementFontOption.size,
+      ),
+    ); //TOdo : apply the font family of math style.
+    TextPainter tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+    tp.layout();
+
+    return Tuple3(tp.width, tp.height, Point(0.0, tp.height / 2));
+  }
+
+  @override
+  void render(Canvas canvas) {
+    TextPainter tp = TextPainter(
+      text: TextSpan(
+        text: content,
+        style: TextStyle(
+          fontSize: elementFontOption.size,
+          color: elementFontOption.color,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    ); //TOdo : apply the font family of math style.
+    tp.layout();
+    tp.paint(canvas, const Offset(0, 0));
+  }
+
+  @override
+  String toLatex() {
+    return "";
+  }
+}
+
+class ElementBigOperation extends Element {
+  ElementBigOperation({
+    required this.content,
+    required ElementFontOption elementFontOption,
+    this.childElements = const [],
+  }) : super(
+            elementFontOption: elementFontOption,
+            type: ElementType.bigOperation);
+
+  String content;
+  final List<ChildrenElement> childElements;
+
+  @override
+  Tuple3<double, double, Point<double>> measureLayout() {
+    var span = TextSpan(
+      text: content,
+      style: TextStyle(
+          color: elementFontOption.color, fontSize: elementFontOption.size * 2),
+    ); //TOdo : apply the font family of math style.
+    TextPainter tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+    tp.layout();
+    double mx = tp.width;
+    double my = tp.height;
+    var relPos = <Point<double>>[];
+    var relXMin = 0.0;
+    var relYMin = 0.0;
+    var relXMax = 0.0;
+    var relYMax = 0.0;
+    for (int i = 0; i < childElements.length; i++) {
+      if (childElements[i].children == null) {
+        continue;
+        //Todo : write code for rendering optional indicator box.
+      }
+      childElements[i].children!.measureLayout();
+      var relativePoint = childElements[i].calculateRelativePosition(mx, my);
+      relPos.add(relativePoint);
+      if (relativePoint.x < relXMin) relXMin = relativePoint.x;
+      if (relativePoint.y < relYMin) relYMin = relativePoint.y;
+      if (relativePoint.x + childElements[i].children!.width > relXMax) {
+        relXMax = relativePoint.x + childElements[i].children!.width;
+      }
+      if (relativePoint.y + childElements[i].children!.height > relYMax) {
+        relYMax = relativePoint.y + childElements[i].children!.height;
+      }
+    }
+
+    var origX = relXMin < 0 ? relXMin : 0.0;
+    var origY = relYMin < 0 ? relYMin : 0.0;
+    anchorPoint = Point(0.0 - origX, my / 2 - origY);
+    for (int i = 0; i < childElements.length; i++) {
+      if (childElements[i].children == null) {
+        continue; //Todo : write code for rendering optional indicator box.
+      }
+      childElements[i].position =
+          Point(relPos[i].x - origX, relPos[i].y - origY);
+    }
+
+    return Tuple3(
+      max(anchorPoint.x + width, relXMax - origX),
+      max(anchorPoint.y + height / 2, relYMax - origY),
+      Point(0.0 - origX, my / 2 - origY),
+    );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    TextPainter tp = TextPainter(
+      text: TextSpan(text: content),
+      textDirection: TextDirection.ltr,
+    ); //TOdo : apply the font family of math style.
+    tp.layout();
+    tp.paint(
+        canvas, Offset(anchorPoint.x, anchorPoint.y - elementFontOption.size));
+    for (int i = 0; i < childElements.length; i++) {
+      if (childElements[i].children == null) {
+        continue; //Todo : write code for rendering optional indicator box.
+      }
+      canvas.save();
+      canvas.translate(
+          childElements[i].position.x, childElements[i].position.y);
+      childElements[i].children!.render(canvas);
+      canvas.restore();
+    }
+  }
+
+  @override
+  String toLatex() {
+    return "";
+  }
+}
+
+abstract class ElementLayout extends Element {
+  ElementLayout({required ElementFontOption elementFontOption})
+      : super(elementFontOption: elementFontOption, type: ElementType.layout);
+
+  var childElements = <ChildrenElement>[];
+
+  @override
+  void render(Canvas canvas) {
+    for (int i = 0; i < childElements.length; i++) {
+      //canvas.save();
+      //canvas.translate(
+      //    childElements[i].position.x, childElements[i].position.y);
+      childElements[i].children!.render(canvas);
+      //canvas.restore();
+    }
+  }
+
+  @override
+  String toLatex();
+
+  void addElement(int index, Element element);
+
+  void deleteElement(int index);
+
+  // returns -1 if there's no where to go. then, the program should find parent elementlayout.
+  int requestCursorRight(int pos, CursorPosition cursorPosition);
+
+  int requestCursorLeft(int pos, CursorPosition cursorPosition);
+
+  int requestCursorUp(int pos, CursorPosition cursorPosition);
+
+  int requestCursorDown(int pos, CursorPosition cursorPosition);
+
+  // returns whether it should merge first or end index with parent horizontal layout.
+  bool shouldMergeStartIndex();
+
+  bool shouldMergeEndIndex();
+}
+
+//TOdo : Write Accent Element
+/*
+class ElementAccent extends Element {
+  ElementAccent({required this.content, required this.elementFontOption})
+      : super(type: ElementType.accent, elementFontOption: elementFontOption);
+
+  Element content;
   ElementFontOption elementFontOption;
   var childElements = <ChildrenElement>[];
 
@@ -169,7 +346,7 @@ class Element {
     tp.layout();
     tp.paint(canvas, Offset(anchorPoint.x, anchorPoint.y));
     for (int i = 0; i < childElements.length; i++) {
-      if(childElements[i].children == null){
+      if (childElements[i].children == null) {
         continue; //Todo : write code for rendering optional indicator box.
       }
       canvas.save();
@@ -183,4 +360,28 @@ class Element {
   String toLatex() {
     return "";
   }
+}*/
+
+abstract class Element {
+  Element({required this.type, required this.elementFontOption});
+
+  final ElementType type;
+  ElementFontOption elementFontOption;
+
+  late double width;
+  late double height;
+  late Point<double> anchorPoint;
+
+  void layout() {
+    Tuple3<double, double, Point<double>> result = measureLayout();
+    width = result.item1;
+    height = result.item2;
+    anchorPoint = result.item3;
+  }
+
+  Tuple3<double, double, Point<double>> measureLayout();
+
+  void render(Canvas canvas);
+
+  String toLatex();
 }

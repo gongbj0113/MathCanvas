@@ -28,7 +28,7 @@ class EditorDragEvent extends Event {
     if (mDrag == false) {
       // it's just tap event.
       Offset local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
-      startNewEventStack(EditorAddNewEquationEventStack(local.dx, local.dy, 10));
+      startNewEventStack(EditorAddNewEquationEventStack(local.dx, local.dy, 20));
     }
     mDown = false;
     mDrag = false;

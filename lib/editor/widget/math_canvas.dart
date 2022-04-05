@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show KeyDownEvent, KeyUpEvent;
+import 'package:flutter/services.dart' show HardwareKeyboard, KeyDownEvent, KeyUpEvent;
 
 import '../system/canvas_data.dart';
 import '../system/event_system.dart';
@@ -22,7 +22,8 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
   @override
   void initState() {
     super.initState();
-    AnimationController(vsync: this, duration: const Duration(seconds: 1)).forward();
+    AnimationController(vsync: this, duration: const Duration(seconds: 1))
+        .forward();
 
     _eventSystem = EventSystem(this);
     _eventSystem.addEventStack(EditorInitialEventStack());
@@ -60,12 +61,16 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
           _eventSystem.mouseUp(event.localPosition.dx, event.localPosition.dy);
         },
         child: KeyboardListener(
-          focusNode: FocusNode(),
+          focusNode: FocusNode()..requestFocus(),
           autofocus: true,
           onKeyEvent: (keyEvent) {
             if (keyEvent is KeyDownEvent) {
               _eventSystem.keyDown(keyEvent.physicalKey);
             } else if (keyEvent is KeyUpEvent) {
+              print("");
+              print(keyEvent.logicalKey.keyLabel);
+              print(HardwareKeyboard.instance.physicalKeysPressed);
+              //print(keyEvent.physicalKey);
               _eventSystem.keyUp(keyEvent.physicalKey);
             }
           },
@@ -88,21 +93,27 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
                 ...(_eventSystem.mathCanvasData.editorData
                     .getAdditionalWidgetBackground()),
                 ..._eventSystem.mathCanvasData.equationData.map((eq) {
-                  return Positioned(
-                    top: ((eq.x - (eq.rootElement.anchorPoint.x)) -
-                            _eventSystem.mathCanvasData.editorData.x) *
-                        _eventSystem.mathCanvasData.editorData.scale,
-                    left: (eq.y - (eq.rootElement.anchorPoint.y)) -
-                        (_eventSystem.mathCanvasData.editorData.y) *
-                            _eventSystem.mathCanvasData.editorData.scale,
-                    child: Transform.scale(
-                      origin: const Offset(0, 0),
-                      scale: _eventSystem.mathCanvasData.editorData.scale,
-                      child: CustomPaint(
-                        size: Size(eq.rootElement.width, eq.rootElement.height),
-                        painter: _MathCanvasEquationPainter(eq),
-                      ),
-                    ),
+                  return StatefulBuilder(
+                    builder: (context, setState) { // Todo : Optimization : Do not draw element that is out of screen.
+                      eq.attachDataChangedListener(() => setState(() {}));
+                      return Transform.translate(
+                        offset: Offset(
+                          ((eq.x - eq.rootElement.anchorPoint.x) - _eventSystem.mathCanvasData.editorData.x) *
+                              _eventSystem.mathCanvasData.editorData.scale,
+                          ((eq.y - eq.rootElement.anchorPoint.y) - _eventSystem.mathCanvasData.editorData.y) *
+                              _eventSystem.mathCanvasData.editorData.scale,
+                        ),
+                        child: Transform.scale(
+                          alignment: Alignment.topLeft,
+                          scale: _eventSystem.mathCanvasData.editorData.scale,
+                          child: CustomPaint(
+                            size: Size(
+                                eq.rootElement.width, eq.rootElement.height),
+                            painter: _MathCanvasEquationPainter(eq),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 }),
                 ...(_eventSystem.mathCanvasData.editorData

@@ -1,33 +1,33 @@
 import 'dart:math';
-
-import 'package:flutter/material.dart' show Colors;
+import 'package:math_canvas/editor/system/components/cursor_component.dart';
+import 'package:tuple/tuple.dart';
 import '../element_system.dart';
 
-class HorizontalLayoutElement extends Element {
+class HorizontalLayoutElement extends ElementLayout {
   static const double padding = 5;
 
   HorizontalLayoutElement(double fontSize)
-      : super(
-          content: "",
-          elementFontOption: ElementFontOption(fontSize, Colors.black),
-          type: ElementType.layout,
-        );
+      : super(elementFontOption: ElementFontOption(size: fontSize));
 
-  void addElement(Element element) {
-    childElements.add(
-      ChildrenElement(element)
-        ..type = ChildrenElementType.necessary
-        ..anchor = ElementAnchor.none,
+  @override
+  void addElement(int index, Element element) {
+    childElements.insert(
+      index,
+      ChildrenElement(ChildrenElementType.necessary, children: element),
     );
-    element.elementFontOption.size = elementFontOption.size;
   }
 
   @override
-  void measureLayout() {
+  void deleteElement(int index) {
+    childElements.removeAt(index);
+  }
+
+  @override
+  Tuple3<double, double, Point<double>> measureLayout() {
     double maxAnchorY = 0;
     double maxAfterAnchorY = 0;
     for (int i = 0; i < childElements.length; i++) {
-      childElements[i].children!.measureLayout();
+      childElements[i].children!.layout();
       if (childElements[i].children!.anchorPoint.y > maxAnchorY) {
         maxAnchorY = childElements[i].children!.anchorPoint.y;
       }
@@ -46,8 +46,49 @@ class HorizontalLayoutElement extends Element {
       curX += childElements[i].children!.width + padding;
     }
 
-    width = curX - padding;
-    height = maxAnchorY + maxAfterAnchorY;
+    return Tuple3(curX - padding, maxAnchorY + maxAfterAnchorY, anchorPoint);
   }
-// TOdo : write toLatex Function
+
+  @override
+  int requestCursorDown(int pos, CursorPosition cursorPosition) {
+    return -1;
+  }
+
+  @override
+  int requestCursorLeft(int pos, CursorPosition cursorPosition) {
+    if (cursorPosition.index[pos] > 0) {
+      return cursorPosition.index[pos] - 1;
+    } else {
+      return -1;
+    }
+  }
+
+  @override
+  int requestCursorRight(int pos, CursorPosition cursorPosition) {
+    if (childElements.length > cursorPosition.index[pos]) {
+      return cursorPosition.index[pos] + 1;
+    } else {
+      return -1;
+    }
+  }
+
+  @override
+  int requestCursorUp(int pos, CursorPosition cursorPosition) {
+    return -1;
+  }
+
+  @override
+  bool shouldMergeEndIndex() {
+    return true;
+  }
+
+  @override
+  bool shouldMergeStartIndex() {
+    return true;
+  }
+
+  @override
+  String toLatex() {
+    return "";
+  }
 }
