@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HardwareKeyboard, KeyDownEvent, KeyUpEvent;
+import 'package:math_canvas/editor/system/keyboard_system.dart';
 
 import '../system/canvas_data.dart';
 import '../system/event_system.dart';
@@ -64,13 +65,18 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
           focusNode: FocusNode()..requestFocus(),
           autofocus: true,
           onKeyEvent: (keyEvent) {
+            //print("");
+            //print(keyEvent.logicalKey);
             if (keyEvent is KeyDownEvent) {
               _eventSystem.keyDown(keyEvent.physicalKey);
             } else if (keyEvent is KeyUpEvent) {
-              print("");
-              print(keyEvent.logicalKey.keyLabel);
-              print(HardwareKeyboard.instance.physicalKeysPressed);
-              //print(keyEvent.physicalKey);
+              KeyboardEventData a = KeyboardEventData(keyEvent);
+              print(a.logicalString);
+              //print("");
+              //print(keyEvent);
+              //print(HardwareKeyboard.instance.lockModesEnabled.toList());
+              //print(HardwareKeyboard.instance.logicalKeysPressed);
+              //print(keyEvent.logicalKey);
               _eventSystem.keyUp(keyEvent.physicalKey);
             }
           },
