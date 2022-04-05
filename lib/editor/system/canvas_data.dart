@@ -6,10 +6,21 @@ class MathCanvasData {
   List<MathCanvasEquationData> equationData = <MathCanvasEquationData>[];
 }
 
+class _AdditionalWidget {
+  _AdditionalWidget(this.id, this.widget, this.position, this.local);
+
+  int id;
+  Widget widget;
+  Offset position;
+  bool local;
+}
+
 class MathCanvasEditorData {
   final List<Function()> _dataChanged = [];
-  final List<Widget> _additionalWidgetForeground = [];
-  final List<Widget> _additionalWidgetBackground = [];
+  final List<_AdditionalWidget> _additionalWidgetForeground = [];
+  final List<_AdditionalWidget> _additionalWidgetBackground = [];
+
+  int idCount = 0;
 
   Offset localToGlobal(Offset offset) {
     return Offset((offset.dx - x) * scale, (offset.dy - y) * scale);
@@ -23,71 +34,88 @@ class MathCanvasEditorData {
     _dataChanged.add(onDataChanged);
   }
 
-  Widget _buildAdditionalWidget(Widget widget, Offset globalPosition) =>
+  Widget _buildAdditionalWidgetGlobal(Widget widget, Offset position) =>
       Positioned(
-        left: globalPosition.dx,
-        top: globalPosition.dy,
+        left: position.dx,
+        top: position.dy,
+        child: widget,
+      );
+
+  Widget _buildAdditionalWidgetLocal(Widget widget, Offset position) =>
+      Positioned(
+        left: (position.dx - x) * scale,
+        top: (position.dy - y) * scale,
         child: widget,
       );
 
   //returns id
   int attachWidgetForeground(Widget widget, Offset position,
-      {bool localPosition = true}) {
-    _additionalWidgetForeground.add(
-      _buildAdditionalWidget(
-        widget,
-        localPosition ? localToGlobal(position) : position,
-      ),
-    );
-    return _additionalWidgetForeground.length - 1;
+      {bool local = true}) {
+    _additionalWidgetForeground
+        .add(_AdditionalWidget(idCount++, widget, position, local));
+    return idCount - 1;
   }
 
   void detachWidgetForeground(int id) {
-    _additionalWidgetForeground.removeAt(id);
+    for(int i = 0; i < _additionalWidgetForeground.length; i ++){
+      if(_additionalWidgetForeground[i].id == id){
+        _additionalWidgetForeground.removeAt(i);
+        return;
+      }
+    }
+    print("Detach: There is no attached Foreground Widget with id : $id");
   }
 
   void updateWidgetForeground(int id, Widget widget, Offset position,
-      {bool localPosition = true}) {
-    _additionalWidgetForeground.insert(
-      id,
-      _buildAdditionalWidget(
-        widget,
-        localPosition ? localToGlobal(position) : position,
-      ),
-    );
-    _additionalWidgetForeground.removeAt(id + 1);
+      {bool local = true}) {
+    for(int i = 0; i < _additionalWidgetForeground.length; i ++){
+      if(_additionalWidgetForeground[i].id == id){
+        _additionalWidgetForeground[i] = _AdditionalWidget(id, widget, position, local);
+        return;
+      }
+    }
+    print("Update: There is no attached Foreground Widget with id : $id");
   }
 
   int attachWidgetBackground(Widget widget, Offset position,
-      {bool localPosition = true}) {
-    _additionalWidgetBackground.add(
-      _buildAdditionalWidget(
-        widget,
-        localPosition ? localToGlobal(position) : position,
-      ),
-    );
-    return _additionalWidgetBackground.length - 1;
+      {bool local = true}) {
+    _additionalWidgetBackground
+        .add(_AdditionalWidget(idCount++, widget, position, local));
+    return idCount - 1;
   }
 
   void detachWidgetBackground(int id) {
-    _additionalWidgetBackground.removeAt(id);
+    for(int i = 0; i < _additionalWidgetBackground.length; i ++){
+      if(_additionalWidgetBackground[i].id == id){
+        _additionalWidgetBackground.removeAt(i);
+        return;
+      }
+    }
+    print("Detach: There is no attached Background Widget with id : $id");
   }
 
   void updateWidgetBackground(int id, Widget widget, Offset position,
-      {bool localPosition = true}) {
-    _additionalWidgetBackground.insert(
-      id,
-      _buildAdditionalWidget(
-        widget,
-        localPosition ? localToGlobal(position) : position,
-      ),
-    );
-    _additionalWidgetBackground.removeAt(id + 1);
+      {bool local = true}) {
+    for(int i = 0; i < _additionalWidgetBackground.length; i ++){
+      if(_additionalWidgetBackground[i].id == id){
+        _additionalWidgetBackground[i] = _AdditionalWidget(id, widget, position, local);
+        return;
+      }
+    }
+    print("Update: There is no attached Background Widget with id : $id");
   }
 
-  List<Widget> getAdditionalWidgetForeground() => _additionalWidgetForeground;
+  List<Widget> getAdditionalWidgetForeground() => _additionalWidgetForeground
+      .map((e) => (e.local
+          ? _buildAdditionalWidgetLocal(e.widget, e.position)
+          : _buildAdditionalWidgetGlobal(e.widget, e.position)))
+      .toList();
 
-  List<Widget> getAdditionalWidgetBackground() => _additionalWidgetBackground;
+  List<Widget> getAdditionalWidgetBackground() => _additionalWidgetBackground
+      .map((e) => (e.local
+          ? _buildAdditionalWidgetLocal(e.widget, e.position)
+          : _buildAdditionalWidgetGlobal(e.widget, e.position)))
+      .toList();
 
   double x = 0;
   double y = 0;

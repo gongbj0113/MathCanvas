@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart' show Colors, Canvas;
+import 'package:flutter/material.dart' show Colors;
 import '../element_system.dart';
 
 class HorizontalLayoutElement extends Element {

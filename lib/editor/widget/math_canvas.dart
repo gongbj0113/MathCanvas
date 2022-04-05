@@ -4,7 +4,7 @@ import 'package:flutter/services.dart' show KeyDownEvent, KeyUpEvent;
 
 import '../system/canvas_data.dart';
 import '../system/event_system.dart';
-import '../system/events/initial_stack/editor_initial_eventStack.dart';
+import '../system/events/initial_stack/editor_initial_es.dart';
 
 class MathCanvasWidget extends StatefulWidget {
   const MathCanvasWidget(this.width, this.height, {Key? key}) : super(key: key);
@@ -22,7 +22,7 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
   @override
   void initState() {
     super.initState();
-    AnimationController(vsync: this, duration: Duration(seconds: 1)).forward();
+    AnimationController(vsync: this, duration: const Duration(seconds: 1)).forward();
 
     _eventSystem = EventSystem(this);
     _eventSystem.addEventStack(EditorInitialEventStack());
@@ -129,20 +129,20 @@ class _EditorGridBackground extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     double newInterval = gridInterval * scale;
-    double x_s = newInterval - (x * scale) % newInterval;
-    double y_s = newInterval - (y * scale) % newInterval;
+    double xS = newInterval - (x * scale) % newInterval;
+    double yS = newInterval - (y * scale) % newInterval;
     var p = Paint()
       ..color = gridColor
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
     //Todo : optimization when there's too many grid to draw.
-    while (x_s <= size.width) {
-      canvas.drawLine(Offset(x_s, 0), Offset(x_s, size.height), p);
-      x_s += newInterval;
+    while (xS <= size.width) {
+      canvas.drawLine(Offset(xS, 0), Offset(xS, size.height), p);
+      xS += newInterval;
     }
-    while (y_s <= size.height) {
-      canvas.drawLine(Offset(0, y_s), Offset(size.width, y_s), p);
-      y_s += newInterval;
+    while (yS <= size.height) {
+      canvas.drawLine(Offset(0, yS), Offset(size.width, yS), p);
+      yS += newInterval;
     }
   }
 

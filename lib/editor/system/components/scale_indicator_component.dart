@@ -6,10 +6,6 @@ import '../animated_value.dart';
 
 
 class ComponentScaleIndicator extends EventSystemComponent{
-  @override
-  void initialize() {
-  }
-
   int id = -1;
   AnimatedValue<double>? scaleIndicatorOpacity;
 
@@ -58,7 +54,7 @@ class ComponentScaleIndicator extends EventSystemComponent{
             id,
             buildScaleIndicator(mathCanvasData.editorData.scale),
             Offset(lastMx - 40, lastMy - 35),
-            localPosition: false,
+            local: false,
           );
         }
 
@@ -67,14 +63,14 @@ class ComponentScaleIndicator extends EventSystemComponent{
       id = mathCanvasData.editorData.attachWidgetForeground(
         buildScaleIndicator(mathCanvasData.editorData.scale),
         Offset(lastMx - 40, lastMy - 35),
-        localPosition: false,
+        local: false,
       );
     } else {
       mathCanvasData.editorData.updateWidgetForeground(
         id,
         buildScaleIndicator(mathCanvasData.editorData.scale),
         Offset(lastMx - 40, lastMy - 35),
-        localPosition: false,
+        local: false,
       );
     }
     scaleIndicatorOpacity!.value = 1.0;
