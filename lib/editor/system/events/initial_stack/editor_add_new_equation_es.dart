@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:math_canvas/editor/system/components/cursor_component.dart';
 import 'package:math_canvas/editor/system/element_system.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
 import 'package:math_canvas/editor/system/events/data/equation_create_new.dart';
 import 'package:math_canvas/editor/system/events/initial_stack/editor_scaling_event.dart';
+
+import '../../keyboard_system.dart';
 
 class EditorAddNewEquationEventStack extends EventStack {
   double editorX;
@@ -16,7 +18,6 @@ class EditorAddNewEquationEventStack extends EventStack {
   void initialize() {
     addEvent(_EditorAddNewEquationEvent(editorX, editorY, fontSize));
     addEvent(EditorScalingEvent());
-    //startNewEventStack(EditorMovingEventStack(editorX, editorY));
     super.initialize();
   }
 }
@@ -30,19 +31,15 @@ class _EditorAddNewEquationEvent extends Event {
 
   late int id;
 
-  Widget newCursorWidget() {
-    return Container(
-      color: Colors.red,
-      width: 3,
-      height: fontSize,
-    );
-  }
-
   @override
   void initialize() {
+    var cursorStatus = findComponentAsType<ComponentCursor>()!.status;
+    if(cursorStatus == CursorStatus.focused || cursorStatus == CursorStatus.selection){
+      findComponentAsType<ComponentCursor>()!.unFocus();
+    }
     id = mathCanvasData.editorData.attachWidgetForeground(
-      newCursorWidget(),
-      Offset(editorX - 1.5, editorY - fontSize / 2),
+      CursorWidget(fontSize: fontSize, color: Colors.redAccent),
+      Offset(editorX, editorY),
       local: true,
     );
     mathCanvasData.editorData.finishDataChange();
@@ -61,62 +58,30 @@ class _EditorAddNewEquationEvent extends Event {
     closeEventStack(true);
   }
 
-  var validKeys = [
-    "!",
-    "@",
-    "#",
-    "\$",
-    "%",
-    "^",
-    "&",
-    "*",
-    "(",
-    ")",
-    "-",
-    "_",
-    "+",
-    "=",
-    "\"",
-    "'",
-    "[",
-    "{",
-    "]",
-    "}",
-    "\\",
-    "|",
-    ",",
-    "<",
-    ".",
-    ">",
-    "/",
-    "?",
-    ";",
-    ":",
-    "~",
-    "`"
-  ];
-
   @override
-  void keyDown(PhysicalKeyboardKey key) {
-    if ((key.usbHidUsage >= 0x00070004 &&
-                key.usbHidUsage <= 0x0007001d) || // aA~zZ
-            (key.usbHidUsage >= 0x0007001e &&
-                key.usbHidUsage <= 0x00070027) || // digit 1~9, 0
-            (key.usbHidUsage >= 0x00070059 &&
-                key.usbHidUsage <= 0x00070062) || // numpad 1~9, 0
-            (validKeys.contains(key.debugName)) // other symbols
-        ) {
+  void keyDown(KeyboardEventData key) {
+    if (key.isLetter()) {
       //create new Equation
+
       startNewDataEvent(
         DataEventCreateEquation(
           Offset(editorX, editorY),
           initialElement: ElementSymbol(
             elementFontOption: ElementFontOption(),
-            content: key.debugName ?? "?",
+            content: key.logicalString,
           ),
+          onEquationCreated: (equationData) {
+            findComponentAsType<ComponentCursor>()!.focusTo(
+              CursorPosition(
+                equationData,
+                [1],
+              ),
+            );
+          },
         ),
       );
-    } else {
+      closeEventStack(false);
+    } else if (key.isAction()) {
       closeEventStack(false);
       return;
     }

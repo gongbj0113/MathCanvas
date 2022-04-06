@@ -140,10 +140,13 @@ class MathCanvasEquationData {
   final Element rootElement;
 
   //position of the anchor inside the editor
-  double x;
-  double y;
+  double anchorX;
+  double anchorY;
 
-  MathCanvasEquationData(this.rootElement, {this.x = 0, this.y = 0});
+  double get localX => anchorX - rootElement.anchorPoint.x;
+  double get localY => anchorY - rootElement.anchorPoint.y;
+
+  MathCanvasEquationData(this.rootElement, {this.anchorX = 0, this.anchorY = 0});
 
   void Function()? _repaint;
 

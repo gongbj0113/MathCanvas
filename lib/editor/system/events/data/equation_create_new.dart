@@ -8,10 +8,12 @@ import 'package:math_canvas/editor/system/element_system.dart';
 class DataEventCreateEquation extends DataEvent {
   Offset position;
   Element? initialElement;
+  void Function(MathCanvasEquationData)? onEquationCreated;
 
   late MathCanvasEquationData equationData;
 
-  DataEventCreateEquation(this.position, {this.initialElement});
+  DataEventCreateEquation(this.position,
+      {this.initialElement, this.onEquationCreated});
 
   @override
   void evaluate(MathCanvasData mathCanvasData) {
@@ -22,11 +24,14 @@ class DataEventCreateEquation extends DataEvent {
     }
 
     equationData = MathCanvasEquationData(horizontalLayoutElement);
-    equationData.x = position.dx;
-    equationData.y = position.dy;
+    equationData.anchorX = position.dx;
+    equationData.anchorY = position.dy;
     equationData.rootElement.layout();
 
     mathCanvasData.equationData.add(equationData);
+    if (onEquationCreated != null) {
+      onEquationCreated!(equationData);
+    }
     mathCanvasData.editorData.finishDataChange();
   }
 

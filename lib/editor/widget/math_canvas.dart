@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show HardwareKeyboard, KeyDownEvent, KeyUpEvent;
+import 'package:flutter/services.dart'
+    show KeyDownEvent, KeyUpEvent;
 import 'package:math_canvas/editor/system/keyboard_system.dart';
 
 import '../system/canvas_data.dart';
@@ -62,22 +63,20 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
           _eventSystem.mouseUp(event.localPosition.dx, event.localPosition.dy);
         },
         child: KeyboardListener(
-          focusNode: FocusNode()..requestFocus(),
+          focusNode: FocusNode()
+            ..requestFocus(),
           autofocus: true,
           onKeyEvent: (keyEvent) {
-            //print("");
-            //print(keyEvent.logicalKey);
             if (keyEvent is KeyDownEvent) {
-              _eventSystem.keyDown(keyEvent.physicalKey);
+              _eventSystem.keyDown(KeyboardEventData(keyEvent));
             } else if (keyEvent is KeyUpEvent) {
-              KeyboardEventData a = KeyboardEventData(keyEvent);
-              print(a.logicalString);
-              //print("");
+              _eventSystem.keyUp(KeyboardEventData(keyEvent));
+              // KeyboardEventData a = KeyboardEventData(keyEvent);
+              // print(a.logicalString);
               //print(keyEvent);
               //print(HardwareKeyboard.instance.lockModesEnabled.toList());
               //print(HardwareKeyboard.instance.logicalKeysPressed);
               //print(keyEvent.logicalKey);
-              _eventSystem.keyUp(keyEvent.physicalKey);
             }
           },
           child: MouseRegion(
@@ -100,13 +99,16 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
                     .getAdditionalWidgetBackground()),
                 ..._eventSystem.mathCanvasData.equationData.map((eq) {
                   return StatefulBuilder(
-                    builder: (context, setState) { // Todo : Optimization : Do not draw element that is out of screen.
+                    builder: (context, setState) {
+                      // Todo : Optimization : Do not draw element that is out of screen.
                       eq.attachDataChangedListener(() => setState(() {}));
                       return Transform.translate(
                         offset: Offset(
-                          ((eq.x - eq.rootElement.anchorPoint.x) - _eventSystem.mathCanvasData.editorData.x) *
+                          (eq.localX -
+                              _eventSystem.mathCanvasData.editorData.x) *
                               _eventSystem.mathCanvasData.editorData.scale,
-                          ((eq.y - eq.rootElement.anchorPoint.y) - _eventSystem.mathCanvasData.editorData.y) *
+                          (eq.localY -
+                              _eventSystem.mathCanvasData.editorData.y) *
                               _eventSystem.mathCanvasData.editorData.scale,
                         ),
                         child: Transform.scale(

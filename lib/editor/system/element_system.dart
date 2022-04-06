@@ -259,6 +259,8 @@ abstract class ElementLayout extends Element {
 
   void deleteElement(int index);
 
+  Offset getAnchorPosition(int index);
+
   // returns -1 if there's no where to go. then, the program should find parent elementlayout.
   int requestCursorRight(int pos, CursorPosition cursorPosition);
 

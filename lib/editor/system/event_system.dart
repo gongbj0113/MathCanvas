@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:math_canvas/editor/system/canvas_data.dart';
+import 'package:math_canvas/editor/system/keyboard_system.dart';
 
 enum UserEventType {
   mouseEnterEditor,
@@ -18,7 +18,7 @@ class UserEventData {
   double? dx;
   double? dy;
   Offset? scrollDelta;
-  PhysicalKeyboardKey? key;
+  KeyboardEventData? key;
 
   UserEventData(
       {required this.userEventType,
@@ -61,9 +61,9 @@ class UserEventReceiver {
 
   void mouseWheel(Offset scrollDelta, double dx, double dy) {}
 
-  void keyDown(PhysicalKeyboardKey key) {}
+  void keyDown(KeyboardEventData key) {}
 
-  void keyUp(PhysicalKeyboardKey key) {}
+  void keyUp(KeyboardEventData key) {}
 }
 
 abstract class Event extends UserEventReceiver {
@@ -297,7 +297,7 @@ class EventStack extends UserEventReceiver {
   }
 
   @override
-  void keyDown(PhysicalKeyboardKey key) {
+  void keyDown(KeyboardEventData key) {
     curUserEvent =
         UserEventData(userEventType: UserEventType.keyDown, key: key);
     for (var element in _events) {
@@ -307,7 +307,7 @@ class EventStack extends UserEventReceiver {
   }
 
   @override
-  void keyUp(PhysicalKeyboardKey key) {
+  void keyUp(KeyboardEventData key) {
     curUserEvent = UserEventData(userEventType: UserEventType.keyUp, key: key);
     for (var element in _events) {
       element.keyUp(key);
@@ -505,7 +505,7 @@ class EventSystem extends UserEventReceiver {
   }
 
   @override
-  void keyDown(PhysicalKeyboardKey key) {
+  void keyDown(KeyboardEventData key) {
     getTopEventStack().keyDown(key);
     for (EventSystemComponent esc in _components) {
       esc.keyDown(key);
@@ -513,7 +513,7 @@ class EventSystem extends UserEventReceiver {
   }
 
   @override
-  void keyUp(PhysicalKeyboardKey key) {
+  void keyUp(KeyboardEventData key) {
     getTopEventStack().keyUp(key);
     for (EventSystemComponent esc in _components) {
       esc.keyUp(key);

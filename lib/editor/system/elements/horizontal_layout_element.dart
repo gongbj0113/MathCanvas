@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:math_canvas/editor/system/components/cursor_component.dart';
 import 'package:tuple/tuple.dart';
 import '../element_system.dart';
@@ -47,6 +48,22 @@ class HorizontalLayoutElement extends ElementLayout {
     }
 
     return Tuple3(curX - padding, maxAnchorY + maxAfterAnchorY, anchorPoint);
+  }
+
+  @override
+  Offset getAnchorPosition(int index) {
+    if (index == 0) {
+      return Offset(0.0, anchorPoint.y);
+    } else if (index == childElements.length) {
+      return Offset(
+          childElements.last.position.x + childElements.last.children!.width,
+          anchorPoint.y);
+    } else {
+      return Offset(
+          childElements[index - 1].position.x +
+              childElements[index - 1].children!.width,
+          anchorPoint.y);
+    }
   }
 
   @override

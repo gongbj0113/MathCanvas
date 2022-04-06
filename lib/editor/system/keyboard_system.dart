@@ -242,7 +242,6 @@ class KeyboardEventData {
   ];
 
   late final KeyEvent _keyEvent;
-  late final String _logicalString;
 
   late bool _isShiftPressed;
   late bool _isControlPressed;
@@ -292,7 +291,8 @@ class KeyboardEventData {
   String get logicalString {
     if (kIsWeb) {
       if (isAlphabet()) {
-        if ((isShiftPressed && !isCapsLockOn) || (!isShiftPressed && isCapsLockOn)) {
+        if ((isShiftPressed && !isCapsLockOn) ||
+            (!isShiftPressed && isCapsLockOn)) {
           return logicalKey.keyLabel.toUpperCase();
         } else {
           return logicalKey.keyLabel.toLowerCase();
@@ -302,7 +302,8 @@ class KeyboardEventData {
       }
     } else {
       if (isAlphabet()) {
-        if ((isShiftPressed && !isCapsLockOn) || (!isShiftPressed && isCapsLockOn)) {
+        if ((isShiftPressed && !isCapsLockOn) ||
+            (!isShiftPressed && isCapsLockOn)) {
           return logicalKey.keyLabel.toUpperCase();
         } else {
           return logicalKey.keyLabel.toLowerCase();
@@ -393,7 +394,11 @@ class KeyboardEventData {
     if (alphabetPhysicalKey.contains(physicalKey) ||
         alphabetLogicalKey.contains(logicalKey) ||
         symbolPhysicalKey.contains(physicalKey) ||
-        symbolLogicalKey.contains(logicalKey)) {
+        symbolLogicalKey.contains(logicalKey) ||
+        digitPhysicalKey.contains(physicalKey) ||
+        digitLogicalKey.contains(logicalKey) ||
+        numpadPhysicalKey.contains(physicalKey) ||
+        numpadLogicalKey.contains(logicalKey)) {
       return true;
     }
     return false;
