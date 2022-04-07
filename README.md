@@ -1,16 +1,13 @@
-# math_canvas
+# MathCanvas
+![Frame 2](https://user-images.githubusercontent.com/34854639/162214386-496bc7fa-2ec2-413b-82f6-25cb4e82ac19.png)
 
-MathCanvas
+Graphical Math Equation Editor made by Flutter.\
+My goal is to provide a keyboard typing experience like a calculator.
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Goal
+```diff
++ [√] Event System and Element System for supporting a lot of functions systematically.
++ [√] MathCanvas Editor : Drag to Move, Scroll to change scale, render mathEquations, render additional widgets
+! [Working] Keyboard typing to write a math equation
+- [] Mouse hovering on the equation and click on it to move the Cursor there
+```
