@@ -244,11 +244,11 @@ abstract class ElementLayout extends Element {
   @override
   void render(Canvas canvas) {
     for (int i = 0; i < childElements.length; i++) {
-      //canvas.save();
-      //canvas.translate(
-      //    childElements[i].position.x, childElements[i].position.y);
+      canvas.save();
+      canvas.translate(
+          childElements[i].position.x, childElements[i].position.y);
       childElements[i].children!.render(canvas);
-      //canvas.restore();
+      canvas.restore();
     }
   }
 

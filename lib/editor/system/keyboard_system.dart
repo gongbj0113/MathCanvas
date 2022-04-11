@@ -108,6 +108,7 @@ class KeyboardEventData {
 
   static const actionLogicalKey = [
     LogicalKeyboardKey.space,
+    LogicalKeyboardKey.enter,
     LogicalKeyboardKey.escape,
     LogicalKeyboardKey.backspace,
     LogicalKeyboardKey.delete,
@@ -219,6 +220,7 @@ class KeyboardEventData {
 
   static const actionPhysicalKey = [
     PhysicalKeyboardKey.space,
+    PhysicalKeyboardKey.enter,
     PhysicalKeyboardKey.escape,
     PhysicalKeyboardKey.backspace,
     PhysicalKeyboardKey.delete,
@@ -297,6 +299,18 @@ class KeyboardEventData {
         } else {
           return logicalKey.keyLabel.toLowerCase();
         }
+      } else if (numpadPhysicalKey.contains(physicalKey)) {
+        return numpadPhysicalKey.indexOf(physicalKey).toString();
+      } else if (numpadActionPhysicalKey.contains(physicalKey) &&
+          physicalKey != PhysicalKeyboardKey.numpadEnter) {
+        return [
+          "/",
+          "*",
+          "-",
+          "+",
+          "",
+          "."
+        ][numpadActionPhysicalKey.indexOf(physicalKey)];
       } else {
         return logicalKey.keyLabel;
       }
@@ -380,6 +394,18 @@ class KeyboardEventData {
             return "/";
           } else if (physicalKey == PhysicalKeyboardKey.backslash) {
             return "\\";
+          } else if (numpadPhysicalKey.contains(physicalKey)) {
+            return numpadPhysicalKey.indexOf(physicalKey).toString();
+          } else if (numpadActionPhysicalKey.contains(physicalKey) &&
+              physicalKey != PhysicalKeyboardKey.numpadEnter) {
+            return [
+              "/",
+              "*",
+              "-",
+              "+",
+              "",
+              "."
+            ][numpadActionPhysicalKey.indexOf(physicalKey)];
           } else {
             return logicalKey.keyLabel;
           }

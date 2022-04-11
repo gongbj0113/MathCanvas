@@ -15,20 +15,32 @@ class AnimatedValue<T> {
   }
 
   void addListener(VoidCallback listener){
-    _animationController.addListener(listener);
+    _animationController.addListener((){
+      if(!settingEvent){
+        listener();
+      }else{
+        settingEvent = false;
+      }
+    });
   }
 
   void addStatusListener(AnimationStatusListener listener){
-    _animationController.addStatusListener(listener);
+    _animationController.addStatusListener((status){
+      if(!settingEvent){
+        listener(status);
+      }else{
+        settingEvent = false;
+      }
+    });
   }
 
-  void removeListener(VoidCallback listener){
-    _animationController.removeListener(listener);
-  }
-
-  void removeStatusListener(AnimationStatusListener listener){
-    _animationController.removeStatusListener(listener);
-  }
+  // void removeListener(VoidCallback listener){
+  //   _animationController.removeListener(listener);
+  // }
+  //
+  // void removeStatusListener(AnimationStatusListener listener){
+  //   _animationController.removeStatusListener(listener);
+  // }
 
   bool get isAnimating =>
       _tweenAnimation != null && _animationController.isAnimating;
@@ -41,11 +53,20 @@ class AnimatedValue<T> {
     }
   }
 
+  bool settingEvent = false;
+
   set value(T v) {
+    if(_trueValue == v){
+      return;
+    }
     T pre = value;
-    _animationController.reset();
     _tweenAnimation =
         Tween<T>(begin: pre, end: v).animate(_animationController);
+
+    _trueValue = v;
+    settingEvent = true;
+    _animationController.reset();
+    settingEvent = true;
     _animationController.forward();
   }
 

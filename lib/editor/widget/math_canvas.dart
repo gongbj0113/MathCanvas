@@ -1,12 +1,12 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
-    show KeyDownEvent, KeyUpEvent;
+    show KeyDownEvent, KeyRepeatEvent, KeyUpEvent;
 import 'package:math_canvas/editor/system/keyboard_system.dart';
 
 import '../system/canvas_data.dart';
 import '../system/event_system.dart';
-import '../system/events/initial_stack/editor_initial_es.dart';
+import '../system/events/editor_initial_es.dart';
 
 class MathCanvasWidget extends StatefulWidget {
   const MathCanvasWidget(this.width, this.height, {Key? key}) : super(key: key);
@@ -67,6 +67,7 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
             ..requestFocus(),
           autofocus: true,
           onKeyEvent: (keyEvent) {
+            //print(keyEvent.toString());
             if (keyEvent is KeyDownEvent) {
               _eventSystem.keyDown(KeyboardEventData(keyEvent));
             } else if (keyEvent is KeyUpEvent) {
@@ -77,6 +78,8 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
               //print(HardwareKeyboard.instance.lockModesEnabled.toList());
               //print(HardwareKeyboard.instance.logicalKeysPressed);
               //print(keyEvent.logicalKey);
+            }else if(keyEvent is KeyRepeatEvent){
+              _eventSystem.keyDown(KeyboardEventData(keyEvent)); //Todo : add new parameter that indicates whether it is a repeated event.
             }
           },
           child: MouseRegion(

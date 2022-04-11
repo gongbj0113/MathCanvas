@@ -4,8 +4,7 @@ import 'package:math_canvas/editor/system/event_system.dart';
 
 import '../animated_value.dart';
 
-
-class ComponentScaleIndicator extends EventSystemComponent{
+class ComponentScaleIndicator extends EventSystemComponent {
   int id = -1;
   AnimatedValue<double>? scaleIndicatorOpacity;
 
@@ -14,7 +13,7 @@ class ComponentScaleIndicator extends EventSystemComponent{
   Widget buildScaleIndicator(double scale) {
     return Opacity(
       opacity:
-      scaleIndicatorOpacity != null ? scaleIndicatorOpacity!.value : 0.0,
+          scaleIndicatorOpacity != null ? scaleIndicatorOpacity!.value : 0.0,
       child: Container(
         decoration: const ShapeDecoration(
           shape: StadiumBorder(),
@@ -34,32 +33,33 @@ class ComponentScaleIndicator extends EventSystemComponent{
     );
   }
 
-  void updateScaleIndicator(){
+  void scaleValueAnimationListener() {
+    if (scaleIndicatorOpacity!.value == 1.0) {
+      scaleIndicatorOpacity!.value = 0.0;
+    } else if (scaleIndicatorOpacity!.value == 0.0) {
+      scaleIndicatorOpacity!.dispose();
+      scaleIndicatorOpacity = null;
+      mathCanvasData.editorData.detachWidgetForeground(id);
+      id = -1;
+      mathCanvasData.editorData.finishDataChange();
+      return;
+    }
+    mathCanvasData.editorData.updateWidgetForeground(
+      id,
+      buildScaleIndicator(mathCanvasData.editorData.scale),
+      Offset(lastMx - 40, lastMy - 35),
+      local: false,
+    );
+    mathCanvasData.editorData.finishDataChange();
+  }
+
+  void updateScaleIndicator() {
     if (id == -1) {
       scaleIndicatorOpacity = AnimatedValue<double>(
           initialValue: 0.01,
           vsync: getTickerProvider(),
           duration: const Duration(milliseconds: 500));
-      scaleIndicatorOpacity!.addListener(() {
-        if (scaleIndicatorOpacity!.value == 1.0) {
-          scaleIndicatorOpacity!.value = 0.0;
-        }
-        if (scaleIndicatorOpacity!.value == 0.0) {
-          scaleIndicatorOpacity!.dispose();
-          scaleIndicatorOpacity = null;
-          mathCanvasData.editorData.detachWidgetForeground(id);
-          id = -1;
-        } else {
-          mathCanvasData.editorData.updateWidgetForeground(
-            id,
-            buildScaleIndicator(mathCanvasData.editorData.scale),
-            Offset(lastMx - 40, lastMy - 35),
-            local: false,
-          );
-        }
-
-        mathCanvasData.editorData.finishDataChange();
-      });
+      scaleIndicatorOpacity!.addListener(scaleValueAnimationListener);
       id = mathCanvasData.editorData.attachWidgetForeground(
         buildScaleIndicator(mathCanvasData.editorData.scale),
         Offset(lastMx - 40, lastMy - 35),
@@ -72,9 +72,8 @@ class ComponentScaleIndicator extends EventSystemComponent{
         Offset(lastMx - 40, lastMy - 35),
         local: false,
       );
+      scaleIndicatorOpacity!.value = 1.0;
+      mathCanvasData.editorData.finishDataChange();
     }
-    scaleIndicatorOpacity!.value = 1.0;
-    mathCanvasData.editorData.finishDataChange();
   }
-
 }

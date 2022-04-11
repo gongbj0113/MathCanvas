@@ -144,11 +144,31 @@ class MathCanvasEquationData {
   double anchorY;
 
   double get localX => anchorX - rootElement.anchorPoint.x;
+
   double get localY => anchorY - rootElement.anchorPoint.y;
 
-  MathCanvasEquationData(this.rootElement, {this.anchorX = 0, this.anchorY = 0});
+  MathCanvasEquationData(this.rootElement,
+      {this.anchorX = 0, this.anchorY = 0});
 
   void Function()? _repaint;
+
+  bool isPointContained(Offset position) {
+    return position.dx > localX &&
+        position.dx < localX + rootElement.width &&
+        position.dy > localY &&
+        position.dy < localY + rootElement.height;
+  }
+
+  static double outlineMargin = 4;
+
+  bool isPointContainedOutline(Offset position) {
+    return ((position.dx > localX - outlineMargin && position.dx < localX) ||
+            (position.dx > localX + rootElement.width &&
+                position.dx < localX + rootElement.width + outlineMargin)) &&
+        ((position.dy > localY - outlineMargin && position.dy < localY) ||
+            (position.dy > localY + rootElement.height &&
+                position.dy < localY + rootElement.height + outlineMargin));
+  }
 
   void attachDataChangedListener(void Function() onRepaintRequest) {
     _repaint = onRepaintRequest;
