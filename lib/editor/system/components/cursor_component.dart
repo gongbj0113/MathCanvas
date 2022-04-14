@@ -3,6 +3,7 @@ import 'package:math_canvas/editor/system/animated_value.dart';
 import 'package:math_canvas/editor/system/element_system.dart';
 import 'package:math_canvas/editor/system/elements/horizontal_layout_element.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart'
     show
         Animation,
@@ -64,8 +65,34 @@ class CursorPosition {
     return parent;
   }
 
+  Element? getElement() {
+    ElementLayout parent = rootEquation.rootElement as ElementLayout;
+    for (int i = 0; i < index.length - 1; i++) {
+      parent = parent.childElements[index[i]].children! as ElementLayout;
+    }
+    if (index.length == parent.childElements.length) {
+      return null;
+    } else {
+      return parent.childElements[index.last].children;
+    }
+  }
+
   CursorPosition copy() {
     return CursorPosition(rootEquation, index.map<int>((e) => e).toList());
+  }
+
+  CursorPosition popIndex() {
+    return copy()..index.removeLast();
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is CursorPosition) {
+      return other.rootEquation == rootEquation &&
+          const ListEquality().equals(other.index, index);
+    } else {
+      return super == other;
+    }
   }
 }
 
@@ -87,11 +114,18 @@ class ComponentCursor extends EventSystemComponent {
   AnimatedValue<Offset>? _elevatedCursorPosition;
 
   void showElevatedCursor(CursorPosition pos) {
+    if (status == CursorStatus.focused && this.pos == pos) {
+      hideElevatedCursor();
+      return;
+    }
+
     if (_elevatedCursorWidgetId != null) {
       _elevatedCursorPosition!.value = pos.getLocalPosition();
     } else {
       _elevatedCursorPosition = AnimatedValue(
-          initialValue: pos.getLocalPosition(), duration: const Duration(milliseconds: 100),vsync: getTickerProvider());
+          initialValue: pos.getLocalPosition(),
+          duration: const Duration(milliseconds: 70),
+          vsync: getTickerProvider());
       _elevatedCursorWidgetId =
           mathCanvasData.editorData.attachWidgetForeground(
         CursorWidget(
@@ -259,6 +293,95 @@ class ComponentCursor extends EventSystemComponent {
     }
 
     return null;
+  }
+
+  MathCanvasEquationData? findNearEquationBorder(Offset localPosition) {
+    for (int i = 0; i < mathCanvasData.equationData.length; i++) {
+      if (mathCanvasData.equationData[i]
+          .isPointContainedOutline(localPosition)) {
+        return mathCanvasData.equationData[i];
+      }
+    }
+    return null;
+  }
+
+  CursorPosition cleanCursorPosition(CursorPosition pos) {
+    pos = pos.copy();
+    var element = pos.getLastElementLayout();
+    while (element is! HorizontalLayoutElement) {
+      pos.index.add(0);
+      element =
+          pos.getLastElementLayout(); //Todo : ElementLayout의 첫 항목은 null일 수 있는가?
+    }
+    return pos;
+  }
+
+  CursorPosition findRightCursorPosition(CursorPosition cur, {int pos = -1}) {
+    if (pos == -1) pos = cur.index.length - 1;
+    var result = cur.getLastElementLayout().requestCursorRight(pos, cur);
+    if (result == -1) {
+      if (pos == 0) {
+        var a = cur.copy();
+        a.index = a.index.sublist(0, 1);
+        return a;
+      }
+      return findRightCursorPosition(cur, pos: pos - 1);
+    }
+    var a = cur.copy();
+    a.index = a.index.sublist(0, pos + 1);
+    a.index[a.index.length - 1] = result;
+    return cleanCursorPosition(a);
+  }
+
+  CursorPosition findLeftCursorPosition(CursorPosition cur, {int pos = -1}) {
+    if (pos == -1) pos = cur.index.length - 1;
+    var result = cur.getLastElementLayout().requestCursorLeft(pos, cur);
+    if (result == -1) {
+      if (pos == 0) {
+        var a = cur.copy();
+        a.index = a.index.sublist(0, 1);
+        return a;
+      }
+      return findLeftCursorPosition(cur, pos: pos - 1);
+    }
+    var a = cur.copy();
+    a.index = a.index.sublist(0, pos + 1);
+    a.index[a.index.length - 1] = result;
+    return cleanCursorPosition(a);
+  }
+
+  CursorPosition findUpCursorPosition(CursorPosition cur, {int pos = -1}) {
+    if (pos == -1) pos = cur.index.length - 1;
+    var result = cur.getLastElementLayout().requestCursorUp(pos, cur);
+    if (result == -1) {
+      if (pos == 0) {
+        var a = cur.copy();
+        a.index = a.index.sublist(0, 1);
+        return a;
+      }
+      return findUpCursorPosition(cur, pos: pos - 1);
+    }
+    var a = cur.copy();
+    a.index = a.index.sublist(0, pos + 1);
+    a.index[a.index.length - 1] = result;
+    return cleanCursorPosition(a);
+  }
+
+  CursorPosition findDownCursorPosition(CursorPosition cur, {int pos = -1}) {
+    if (pos == -1) pos = cur.index.length - 1;
+    var result = cur.getLastElementLayout().requestCursorDown(pos, cur);
+    if (result == -1) {
+      if (pos == 0) {
+        var a = cur.copy();
+        a.index = a.index.sublist(0, 1);
+        return a;
+      }
+      return findDownCursorPosition(cur, pos: pos - 1);
+    }
+    var a = cur.copy();
+    a.index = a.index.sublist(0, pos + 1);
+    a.index[a.index.length - 1] = result;
+    return cleanCursorPosition(a);
   }
 }
 

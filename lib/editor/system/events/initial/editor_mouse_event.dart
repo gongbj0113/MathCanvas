@@ -29,8 +29,16 @@ class EditorMouseEvent extends Event {
     if (mDrag == false) {
       // it's just tap event.
       Offset local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
-      startNewEventStack(
-          EditorAddNewEquationEventStack(local.dx, local.dy, 20));
+      var cursor = findComponentAsType<ComponentCursor>()!.findNearCursorPosition(local);
+
+      if(cursor != null){
+        findComponentAsType<ComponentCursor>()!.focusTo(cursor!);
+        findComponentAsType<ComponentCursor>()!.hideElevatedCursor();
+      }else{
+        startNewEventStack(
+            EditorAddNewEquationEventStack(local.dx, local.dy, 20));
+      }
+
     }
     mDown = false;
     mDrag = false;

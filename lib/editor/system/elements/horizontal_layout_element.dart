@@ -5,13 +5,15 @@ import 'package:tuple/tuple.dart';
 import '../element_system.dart';
 
 class HorizontalLayoutElement extends ElementLayout {
-  static const double padding = 5;
+  static const double padding = 2;
+  bool singleChild;
 
-  HorizontalLayoutElement(double fontSize)
+  HorizontalLayoutElement(double fontSize, {this.singleChild = false})
       : super(elementFontOption: ElementFontOption(size: fontSize));
 
   @override
   void addElement(int index, Element element) {
+    assert (!singleChild || (singleChild && childElements.isEmpty));
     childElements.insert(
       index,
       ChildrenElement(ChildrenElementType.necessary, children: element),

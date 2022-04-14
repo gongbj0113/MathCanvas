@@ -54,13 +54,31 @@ class EditorKeyboardEvent extends Event {
 
   @override
   void keyDown(KeyboardEventData key) {
+    var compCursor = findComponentAsType<ComponentCursor>()!;
     if (key.isControlPressed && key.logicalKey == LogicalKeyboardKey.keyZ) {
       //TOdo : perform undo
     } else if (key.isShiftPressed &&
         key.isControlPressed &&
         key.logicalKey == LogicalKeyboardKey.keyZ) {
       //Todo : perform redo
-    } else if (key.isLetter()) {
+    } else if (key.logicalKey == LogicalKeyboardKey.arrowRight) {
+      if(compCursor.status == CursorStatus.focused){
+        compCursor.focusTo(compCursor.findRightCursorPosition(compCursor.pos!));
+      }
+    } else if(key.logicalKey == LogicalKeyboardKey.arrowLeft){
+      if(compCursor.status == CursorStatus.focused){
+        compCursor.focusTo(compCursor.findLeftCursorPosition(compCursor.pos!));
+      }
+    }else if(key.logicalKey == LogicalKeyboardKey.arrowUp){
+      if(compCursor.status == CursorStatus.focused){
+        compCursor.focusTo(compCursor.findUpCursorPosition(compCursor.pos!));
+      }
+    }else if(key.logicalKey == LogicalKeyboardKey.arrowDown){
+      if(compCursor.status == CursorStatus.focused){
+        compCursor.focusTo(compCursor.findDownCursorPosition(compCursor.pos!));
+      }
+    }
+    else if (key.isLetter()) {
       if (findComponentAsType<ComponentCursor>()!.status ==
           CursorStatus.focused) {
         _addElementInLayout(key);
