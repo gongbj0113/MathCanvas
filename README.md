@@ -8,6 +8,11 @@ My goal is to provide a keyboard typing experience like a calculator.
 ```diff
 + [√] Event System and Element System for supporting a lot of functions systematically.
 + [√] MathCanvas Editor : Drag to Move, Scroll to change scale, render mathEquations, render additional widgets
-! [Working] Keyboard typing to write a math equation
-- [] Mouse hovering on the equation and click on it to move the Cursor there
++ [√] Keyboard typing to write a math equation
++ [√] Mouse hovering on the equation and click on it to move the Cursor there
+! [Working] Mouse hover and Drag Equation border to change equation position
+- [] Add subscript, superscript layout and support them on editor
+- [] Add fraction layout and support them on editor
+- [] Support mathmatical font
+...
 ```
