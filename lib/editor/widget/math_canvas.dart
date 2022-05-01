@@ -63,8 +63,7 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
           _eventSystem.mouseUp(event.localPosition.dx, event.localPosition.dy);
         },
         child: KeyboardListener(
-          focusNode: FocusNode()
-            ..requestFocus(),
+          focusNode: FocusNode()..requestFocus(),
           autofocus: true,
           onKeyEvent: (keyEvent) {
             //print(keyEvent.toString());
@@ -78,8 +77,9 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
               //print(HardwareKeyboard.instance.lockModesEnabled.toList());
               //print(HardwareKeyboard.instance.logicalKeysPressed);
               //print(keyEvent.logicalKey);
-            }else if(keyEvent is KeyRepeatEvent){
-              _eventSystem.keyDown(KeyboardEventData(keyEvent)); //Todo : add new parameter that indicates whether it is a repeated event.
+            } else if (keyEvent is KeyRepeatEvent) {
+              _eventSystem.keyDown(KeyboardEventData(
+                  keyEvent)); //Todo : add new parameter that indicates whether it is a repeated event.
             }
           },
           child: MouseRegion(
@@ -104,24 +104,19 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
                   return StatefulBuilder(
                     builder: (context, setState) {
                       // Todo : Optimization : Do not draw element that is out of screen.
-                      eq.attachDataChangedListener(() => setState(() {}));
                       return Transform.translate(
                         offset: Offset(
                           (eq.localX -
-                              _eventSystem.mathCanvasData.editorData.x) *
+                                  _eventSystem.mathCanvasData.editorData.x) *
                               _eventSystem.mathCanvasData.editorData.scale,
                           (eq.localY -
-                              _eventSystem.mathCanvasData.editorData.y) *
+                                  _eventSystem.mathCanvasData.editorData.y) *
                               _eventSystem.mathCanvasData.editorData.scale,
                         ),
                         child: Transform.scale(
                           alignment: Alignment.topLeft,
                           scale: _eventSystem.mathCanvasData.editorData.scale,
-                          child: CustomPaint(
-                            size: Size(
-                                eq.rootElement.width, eq.rootElement.height),
-                            painter: _MathCanvasEquationPainter(eq),
-                          ),
+                          child: MathCanvasEquationWidget(eq),
                         ),
                       );
                     },
@@ -185,10 +180,13 @@ class MathCanvasEquationWidget extends StatefulWidget {
 }
 
 class _MathCanvasEquationWidgetState extends State<MathCanvasEquationWidget> {
+  void rePaint() {
+    setState(() {});
+  }
+
   @override
   void initState() {
-    widget.mathCanvasEquationData
-        .attachDataChangedListener(() => setState(() {}));
+    widget.mathCanvasEquationData.addDataChangedListener(rePaint);
     super.initState();
   }
 

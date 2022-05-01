@@ -13,7 +13,7 @@ class ComponentScaleIndicator extends EventSystemComponent {
   Widget buildScaleIndicator(double scale) {
     return Opacity(
       opacity:
-          scaleIndicatorOpacity != null ? scaleIndicatorOpacity!.value : 0.0,
+      scaleIndicatorOpacity != null ? scaleIndicatorOpacity!.value : 0.0,
       child: Container(
         decoration: const ShapeDecoration(
           shape: StadiumBorder(),

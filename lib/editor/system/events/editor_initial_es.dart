@@ -1,3 +1,4 @@
+import 'package:math_canvas/editor/system/components/elevation_component.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
 import 'package:math_canvas/editor/system/events/initial/editor_keyboard_event.dart';
 import 'package:math_canvas/editor/system/events/initial/editor_scaling_event.dart';
@@ -10,8 +11,10 @@ class EditorInitialEventStack extends EventStack{
   void initialize() {
     addComponent(ComponentScaleIndicator());
     addComponent(ComponentCursor());
+    addComponent(ComponentElevation());
 
     addEvent(EditorMouseEvent());
+    addEvent(EditorMouseHoverEvent());
     addEvent(EditorKeyboardEvent());
     addEvent(EditorScalingEvent());
     super.initialize();

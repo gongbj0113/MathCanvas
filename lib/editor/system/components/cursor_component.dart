@@ -1,5 +1,4 @@
 import 'package:flutter/painting.dart';
-import 'package:math_canvas/editor/system/animated_value.dart';
 import 'package:math_canvas/editor/system/element_system.dart';
 import 'package:math_canvas/editor/system/elements/horizontal_layout_element.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
@@ -17,7 +16,6 @@ import 'package:flutter/material.dart'
         Key,
         Offset,
         Opacity,
-        PhysicalModel,
         ShapeDecoration,
         SingleTickerProviderStateMixin,
         StadiumBorder,
@@ -109,60 +107,6 @@ class ComponentCursor extends EventSystemComponent {
 
   CursorPosition? start;
   CursorPosition? end;
-
-  int? _elevatedCursorWidgetId;
-  AnimatedValue<Offset>? _elevatedCursorPosition;
-
-  void showElevatedCursor(CursorPosition pos) {
-    if (status == CursorStatus.focused && this.pos == pos) {
-      hideElevatedCursor();
-      return;
-    }
-
-    if (_elevatedCursorWidgetId != null) {
-      _elevatedCursorPosition!.value = pos.getLocalPosition();
-    } else {
-      _elevatedCursorPosition = AnimatedValue(
-          initialValue: pos.getLocalPosition(),
-          duration: const Duration(milliseconds: 70),
-          vsync: getTickerProvider());
-      _elevatedCursorWidgetId =
-          mathCanvasData.editorData.attachWidgetForeground(
-        CursorWidget(
-          fontSize: pos.getFontSize(),
-          color: Colors.teal,
-          elevated: true,
-        ),
-        pos.getLocalPosition(),
-        local: true,
-      );
-      _elevatedCursorPosition!.addListener(() {
-        mathCanvasData.editorData.updateWidgetForeground(
-          _elevatedCursorWidgetId!,
-          CursorWidget(
-            fontSize: pos.getFontSize(),
-            color: Colors.teal,
-            elevated: true,
-          ),
-          _elevatedCursorPosition!.value,
-          local: true,
-        );
-        mathCanvasData.editorData.finishDataChange();
-      });
-    }
-    mathCanvasData.editorData.finishDataChange();
-  }
-
-  void hideElevatedCursor() {
-    if (_elevatedCursorWidgetId != null) {
-      mathCanvasData.editorData
-          .detachWidgetForeground(_elevatedCursorWidgetId!);
-      _elevatedCursorWidgetId = null;
-      _elevatedCursorPosition!.dispose();
-      _elevatedCursorPosition = null;
-    }
-    mathCanvasData.editorData.finishDataChange();
-  }
 
   void focusTo(CursorPosition pos) {
     if (_status == CursorStatus.focused) {

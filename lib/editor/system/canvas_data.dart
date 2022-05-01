@@ -150,7 +150,7 @@ class MathCanvasEquationData {
   MathCanvasEquationData(this.rootElement,
       {this.anchorX = 0, this.anchorY = 0});
 
-  void Function()? _repaint;
+  List<void Function()?> _repaint = [];
 
   bool isPointContained(Offset position) {
     return position.dx > localX &&
@@ -159,25 +159,39 @@ class MathCanvasEquationData {
         position.dy < localY + rootElement.height;
   }
 
-  static double outlineMargin = 4;
+  static double outlineMargin = 8;
 
   bool isPointContainedOutline(Offset position) {
-    return ((position.dx > localX - outlineMargin && position.dx < localX) ||
-            (position.dx > localX + rootElement.width &&
-                position.dx < localX + rootElement.width + outlineMargin)) &&
-        ((position.dy > localY - outlineMargin && position.dy < localY) ||
-            (position.dy > localY + rootElement.height &&
-                position.dy < localY + rootElement.height + outlineMargin));
+    return (((position.dx > localX - outlineMargin && position.dx < localX) ||
+                (position.dx > localX + rootElement.width &&
+                    position.dx <
+                        localX + rootElement.width + outlineMargin)) &&
+            (position.dy > localY - outlineMargin &&
+                position.dy < localY + rootElement.height + outlineMargin)) ||
+        (((position.dy > localY - outlineMargin && position.dy < localY) ||
+                (position.dy > localY + rootElement.height &&
+                    position.dy <
+                        localY + rootElement.height + outlineMargin)) &&
+            (position.dx > localX - outlineMargin &&
+                position.dx < localX + rootElement.width + outlineMargin));
   }
 
-  void attachDataChangedListener(void Function() onRepaintRequest) {
-    _repaint = onRepaintRequest;
+  void addDataChangedListener(void Function() onRepaintRequest) {
+    if (!_repaint.contains(onRepaintRequest)) {
+      _repaint.add(onRepaintRequest);
+    }
+  }
+
+  void removeDataChangedListener(void Function() onRepaintRequest) {
+    _repaint.remove(onRepaintRequest);
   }
 
   void requestRepaint() {
     rootElement.layout();
-    if (_repaint != null) {
-      _repaint!();
+    for (var f in _repaint) {
+      if (f != null) {
+        f();
+      }
     }
   }
 }
