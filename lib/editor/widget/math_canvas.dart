@@ -141,7 +141,7 @@ class _EditorGridBackground extends CustomPainter {
   Color gridColor;
 
   _EditorGridBackground(this.x, this.y, this.scale,
-      {this.gridInterval = 20, this.gridColor = Colors.grey});
+      {this.gridInterval = 20, this.gridColor = const Color(0xffd5d5d5)});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -190,6 +190,11 @@ class _MathCanvasEquationWidgetState extends State<MathCanvasEquationWidget> {
     super.initState();
   }
 
+  @override
+  void dispose() {
+    widget.mathCanvasEquationData.removeDataChangedListener(rePaint);
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return CustomPaint(

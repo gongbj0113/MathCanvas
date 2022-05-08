@@ -1,10 +1,10 @@
 import 'dart:math';
 import 'dart:ui' show Offset, PathMetric;
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:math_canvas/editor/system/canvas_data.dart';
 
 import 'package:math_canvas/editor/system/event_system.dart';
+import 'package:tuple/tuple.dart';
 import '../animated_value.dart';
 import 'cursor_component.dart';
 
@@ -14,7 +14,57 @@ class ComponentElevation extends EventSystemComponent {
 
   int? _hoveredBackgroundWidgetId;
 
-  void hoverEquationBackground(MathCanvasEquationData eq) {
+  List<Tuple2<MathCanvasEquationData, int>> evaluatedEquations = [];
+
+  void elevateEquation(MathCanvasEquationData eq,
+      {bool finishDataChange = true}) {
+    for (var item in evaluatedEquations) {
+      if (item.item1 == eq) return;
+    }
+    int newId = mathCanvasData.editorData.attachWidgetBackground(
+      _EquationElevationBackground(
+        true,
+        eq.rootElement.width + MathCanvasEquationData.outlineMargin * 2,
+        eq.rootElement.height + MathCanvasEquationData.outlineMargin * 2,
+      ),
+      Offset(
+        eq.localX - MathCanvasEquationData.outlineMargin,
+        eq.localY - MathCanvasEquationData.outlineMargin,
+      ),
+    );
+    evaluatedEquations.add(Tuple2(eq, newId));
+    if (finishDataChange) mathCanvasData.editorData.finishDataChange();
+  }
+
+  void dismissElevatedEquation(MathCanvasEquationData eq,
+      {bool finishDataChange = true}) {
+    for (var item in evaluatedEquations) {
+      if (item.item1 == eq) {
+        mathCanvasData.editorData.updateWidgetBackground(
+          item.item2,
+          _EquationElevationBackground(
+            false,
+            eq.rootElement.width + MathCanvasEquationData.outlineMargin * 2,
+            eq.rootElement.height + MathCanvasEquationData.outlineMargin * 2,
+            onEnd: () {
+              mathCanvasData.editorData.detachWidgetBackground(item.item2);
+              mathCanvasData.editorData.finishDataChange();
+            },
+          ),
+          Offset(
+            eq.localX - MathCanvasEquationData.outlineMargin,
+            eq.localY - MathCanvasEquationData.outlineMargin,
+          ),
+        );
+        evaluatedEquations.remove(item);
+        if (finishDataChange) mathCanvasData.editorData.finishDataChange();
+        return;
+      }
+    }
+    print("There is no requested MathCanvasEquationData that is elevated");
+  }
+
+  void hoverEquation(MathCanvasEquationData eq) {
     if (_hoveredBackgroundWidgetId != null) {
       mathCanvasData.editorData
           .detachWidgetBackground(_hoveredBackgroundWidgetId!);
@@ -36,7 +86,7 @@ class ComponentElevation extends EventSystemComponent {
     mathCanvasData.editorData.finishDataChange();
   }
 
-  void dismissHoverEquationBackgrounds() {
+  void dismissHoverEquations() {
     if (_hoveredBackgroundWidgetId != null) {
       mathCanvasData.editorData
           .detachWidgetBackground(_hoveredBackgroundWidgetId!);
@@ -213,5 +263,82 @@ class _EquationHoveredBackgroundPaint extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
+  }
+}
+
+class _EquationElevationBackground extends StatefulWidget {
+  final bool visibility;
+  final double width;
+  final double height;
+  final VoidCallback? onEnd;
+
+  const _EquationElevationBackground(this.visibility, this.width, this.height,
+      {this.onEnd});
+
+  @override
+  State<_EquationElevationBackground> createState() =>
+      _EquationElevationBackgroundState();
+}
+
+class _EquationElevationBackgroundState
+    extends State<_EquationElevationBackground>
+    with SingleTickerProviderStateMixin {
+  double opacity = 0;
+  late AnimationController ac;
+  late Animation<double> tween;
+
+  @override
+  void dispose() {
+    ac.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    ac = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 150));
+    ac.value = 0;
+    tween = Tween(begin: 0.0, end: 1.0).animate(ac);
+    tween.addListener(() {
+      setState(() {});
+      if (tween.value == 0 && widget.visibility == false) {
+        if (widget.onEnd != null) {
+          widget.onEnd!();
+        }
+      }
+    });
+    ac.forward();
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant _EquationElevationBackground oldWidget) {
+    tween = Tween(begin: tween.value, end: widget.visibility ? 1.0 : 0.0)
+        .animate(ac);
+    ac.reset();
+    ac.forward();
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: tween.value,
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withAlpha(180),
+              blurRadius: 10,
+              spreadRadius: 1.5,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

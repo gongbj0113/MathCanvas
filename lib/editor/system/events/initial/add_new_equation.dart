@@ -3,8 +3,8 @@ import 'package:math_canvas/editor/system/components/cursor_component.dart';
 import 'package:math_canvas/editor/system/element_system.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
 import 'package:math_canvas/editor/system/events/data/equation_create_new.dart';
-import 'package:math_canvas/editor/system/events/initial/editor_mouse_event.dart';
-import 'package:math_canvas/editor/system/events/initial/editor_scaling_event.dart';
+import 'package:math_canvas/editor/system/events/initial/editor_mouse.dart';
+import 'package:math_canvas/editor/system/events/initial/editor_translate.dart';
 
 import '../../keyboard_system.dart';
 

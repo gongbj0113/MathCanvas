@@ -57,9 +57,11 @@ class MathCanvasEditorData {
   //returns id
   int attachWidgetForeground(Widget widget, Offset position,
       {bool local = true}) {
+    int newId = idCount + 1;
+    idCount ++;
     _additionalWidgetForeground
-        .add(_AdditionalWidget(idCount++, widget, position, local));
-    return idCount - 1;
+        .add(_AdditionalWidget(newId, widget, position, local));
+    return newId;
   }
 
   void detachWidgetForeground(int id) {
@@ -84,11 +86,16 @@ class MathCanvasEditorData {
     print("Update: There is no attached Foreground Widget with id : $id");
   }
 
+  int getNextId(){
+    return idCount + 1;
+  }
   int attachWidgetBackground(Widget widget, Offset position,
       {bool local = true}) {
+    int newId = idCount + 1;
+    idCount ++;
     _additionalWidgetBackground
-        .add(_AdditionalWidget(idCount++, widget, position, local));
-    return idCount - 1;
+        .add(_AdditionalWidget(newId, widget, position, local));
+    return newId;
   }
 
   void detachWidgetBackground(int id) {
@@ -150,7 +157,7 @@ class MathCanvasEquationData {
   MathCanvasEquationData(this.rootElement,
       {this.anchorX = 0, this.anchorY = 0});
 
-  List<void Function()?> _repaint = [];
+  final List<void Function()?> _repaint = [];
 
   bool isPointContained(Offset position) {
     return position.dx > localX &&

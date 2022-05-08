@@ -6,11 +6,6 @@ import 'package:math_canvas/editor/system/events/data/modify_element_in_layout.d
 import 'package:math_canvas/editor/system/keyboard_system.dart';
 
 class EditorKeyboardEvent extends Event {
-  @override
-  void initialize() {
-    // TODO: implement initialize
-    super.initialize();
-  }
 
   void _addElementInLayout(KeyboardEventData key) {
     ComponentCursor cursor = findComponentAsType<ComponentCursor>()!;

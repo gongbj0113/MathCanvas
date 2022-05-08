@@ -5,8 +5,8 @@ import 'package:math_canvas/editor/system/element_system.dart';
 import '../../event_system.dart';
 
 class AddElementInLayout extends DataEvent{
-  CursorPosition _cursorPosition;
-  Element _element;
+  final CursorPosition _cursorPosition;
+  final Element _element;
   void Function(CursorPosition cursorPosition)? onElementAdded;
   void Function(CursorPosition cursorPosition)? onElementRemoved;
 
@@ -32,7 +32,7 @@ class AddElementInLayout extends DataEvent{
 }
 
 class DeleteElementInLayout extends DataEvent{
-  CursorPosition _cursorPosition;
+  final CursorPosition _cursorPosition;
   void Function(CursorPosition cursorPosition)? onElementAdded;
   void Function(CursorPosition cursorPosition)? onElementRemoved;
 

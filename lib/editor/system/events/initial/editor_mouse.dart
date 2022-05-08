@@ -2,9 +2,10 @@ import 'package:flutter/material.dart' show Offset;
 import 'package:math_canvas/editor/system/canvas_data.dart';
 import 'package:math_canvas/editor/system/components/cursor_component.dart';
 import 'package:math_canvas/editor/system/components/elevation_component.dart';
-import 'package:math_canvas/editor/system/events/initial/editor_add_new_equation_es.dart';
-import 'package:math_canvas/editor/system/events/initial/editor_moving_es.dart';
+import 'package:math_canvas/editor/system/events/initial/add_new_equation.dart';
+import 'package:math_canvas/editor/system/events/initial/editor_translate.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
+import 'package:math_canvas/editor/system/events/initial/select_equations.dart';
 
 class EditorMouseEvent extends Event {
   EditorMouseEvent();
@@ -31,10 +32,16 @@ class EditorMouseEvent extends Event {
     if (mDrag == false) {
       // it's just tap event.
       Offset local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
-      var cursor =
-          findComponentAsType<ComponentCursor>()!.findNearCursorPosition(local);
 
-      if (cursor != null) {
+      MathCanvasEquationData? nearEquation =
+      findComponentAsType<ComponentCursor>()!.findNearEquationBorder(local);
+      var cursor =
+      findComponentAsType<ComponentCursor>()!.findNearCursorPosition(local);
+
+      if (nearEquation != null) {
+        startNewEventStack(SelectEquationsEventStack(nearEquation));
+      }
+      else if (cursor != null) {
         findComponentAsType<ComponentCursor>()!.focusTo(cursor);
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
       } else {
@@ -84,20 +91,21 @@ class EditorMouseHoverEvent extends Event {
     if (!mDown) {
       CursorPosition? cursorPos = findComponentAsType<ComponentCursor>()!
           .findNearCursorPosition(
-              mathCanvasData.editorData.globalToLocal(Offset(dx, dy)));
+          mathCanvasData.editorData.globalToLocal(Offset(dx, dy)));
       MathCanvasEquationData? nearEquation =
-          findComponentAsType<ComponentCursor>()!.findNearEquationBorder(
-              mathCanvasData.editorData.globalToLocal(Offset(dx, dy)));
+      findComponentAsType<ComponentCursor>()!.findNearEquationBorder(
+          mathCanvasData.editorData.globalToLocal(Offset(dx, dy)));
 
       if (nearEquation != null) {
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-        findComponentAsType<ComponentElevation>()!.hoverEquationBackground(nearEquation);
+        findComponentAsType<ComponentElevation>()!.hoverEquation(nearEquation);
       } else if (cursorPos != null) {
-        findComponentAsType<ComponentElevation>()!.showElevatedCursor(cursorPos);
-        findComponentAsType<ComponentElevation>()!.dismissHoverEquationBackgrounds();
+        findComponentAsType<ComponentElevation>()!
+            .showElevatedCursor(cursorPos);
+        findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
       } else {
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-        findComponentAsType<ComponentElevation>()!.dismissHoverEquationBackgrounds();
+        findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
       }
     }
   }

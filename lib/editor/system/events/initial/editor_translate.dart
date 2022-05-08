@@ -60,3 +60,11 @@ class _EditorDraggingEvent extends Event {
     mathCanvasData.editorData.finishDataChange();
   }
 }
+
+class EditorScalingEvent extends Event{
+  @override
+  void mouseWheel(Offset scrollDelta, double dx, double dy) {
+    mathCanvasData.editorData.scale -= scrollDelta.dy / 1000;
+    findComponentAsType<ComponentScaleIndicator>()!.updateScaleIndicator();
+  }
+}
