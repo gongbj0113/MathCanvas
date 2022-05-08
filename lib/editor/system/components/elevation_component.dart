@@ -26,6 +26,7 @@ class ComponentElevation extends EventSystemComponent {
         true,
         eq.rootElement.width + MathCanvasEquationData.outlineMargin * 2,
         eq.rootElement.height + MathCanvasEquationData.outlineMargin * 2,
+        mathCanvasData.editorData.getNextId(),
       ),
       Offset(
         eq.localX - MathCanvasEquationData.outlineMargin,
@@ -46,6 +47,7 @@ class ComponentElevation extends EventSystemComponent {
             false,
             eq.rootElement.width + MathCanvasEquationData.outlineMargin * 2,
             eq.rootElement.height + MathCanvasEquationData.outlineMargin * 2,
+            item.item2,
             onEnd: () {
               mathCanvasData.editorData.detachWidgetBackground(item.item2);
               mathCanvasData.editorData.finishDataChange();
@@ -271,8 +273,10 @@ class _EquationElevationBackground extends StatefulWidget {
   final double width;
   final double height;
   final VoidCallback? onEnd;
+  final int id;
 
-  const _EquationElevationBackground(this.visibility, this.width, this.height,
+  const _EquationElevationBackground(
+      this.visibility, this.width, this.height, this.id,
       {this.onEnd});
 
   @override
@@ -313,10 +317,17 @@ class _EquationElevationBackgroundState
 
   @override
   void didUpdateWidget(covariant _EquationElevationBackground oldWidget) {
-    tween = Tween(begin: tween.value, end: widget.visibility ? 1.0 : 0.0)
-        .animate(ac);
-    ac.reset();
-    ac.forward();
+    if (widget.id != oldWidget.id) {
+      tween = Tween(
+              begin: widget.visibility ? 1.0 : 0.0,
+              end: widget.visibility ? 1.0 : 0.0)
+          .animate(ac);
+    } else {
+      tween = Tween(begin: tween.value, end: widget.visibility ? 1.0 : 0.0)
+          .animate(ac);
+      ac.reset();
+      ac.forward();
+    }
     super.didUpdateWidget(oldWidget);
   }
 

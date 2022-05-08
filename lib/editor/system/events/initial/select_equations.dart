@@ -136,7 +136,6 @@ class _SelectEquationsEvent extends Event {
 
   @override
   void mouseUp(double dx, double dy) {
-    //Todo : close this eventStack when selectedEquation count is 0.
     if (!mDrag) {
       Offset local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
 
@@ -149,12 +148,20 @@ class _SelectEquationsEvent extends Event {
         if (nearEquation != null) {
           if (selectedEquations.contains(nearEquation)) {
             dismissSelectedEquation(nearEquation);
+            if(selectedEquations.isEmpty){
+              closeEventStack(false);
+              return;
+            }
           } else {
             selectEquation(nearEquation);
           }
         } else if (cursor != null) {
           if (selectedEquations.contains(cursor.rootEquation)) {
             dismissSelectedEquation(cursor.rootEquation);
+            if(selectedEquations.isEmpty){
+              closeEventStack(false);
+              return;
+            }
           } else {
             selectEquation(cursor.rootEquation);
           }
