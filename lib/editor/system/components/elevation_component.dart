@@ -17,16 +17,36 @@ class ComponentElevation extends EventSystemComponent {
   List<Tuple2<MathCanvasEquationData, int>> evaluatedEquations = [];
 
   void elevateEquation(MathCanvasEquationData eq,
-      {bool finishDataChange = true}) {
+      {bool finishDataChange = true,
+      double shadowStrength = 1.0,
+      VoidCallback? onEndShadowLerp}) {
     for (var item in evaluatedEquations) {
-      if (item.item1 == eq) return;
+      if (item.item1 == eq) {
+        mathCanvasData.editorData.updateWidgetBackground(
+          item.item2,
+          _EquationElevationBackground(
+            true,
+            eq,
+            item.item2,
+            mathCanvasData,
+            shadow: shadowStrength,
+            onEndShadowLerp: onEndShadowLerp,
+          ),
+          Offset(
+            eq.localX - MathCanvasEquationData.outlineMargin,
+            eq.localY - MathCanvasEquationData.outlineMargin,
+          ),
+        );
+        if (finishDataChange) mathCanvasData.editorData.finishDataChange();
+        return;
+      }
     }
     int newId = mathCanvasData.editorData.attachWidgetBackground(
       _EquationElevationBackground(
         true,
-        eq.rootElement.width + MathCanvasEquationData.outlineMargin * 2,
-        eq.rootElement.height + MathCanvasEquationData.outlineMargin * 2,
+        eq,
         mathCanvasData.editorData.getNextId(),
+        mathCanvasData,
       ),
       Offset(
         eq.localX - MathCanvasEquationData.outlineMargin,
@@ -45,10 +65,10 @@ class ComponentElevation extends EventSystemComponent {
           item.item2,
           _EquationElevationBackground(
             false,
-            eq.rootElement.width + MathCanvasEquationData.outlineMargin * 2,
-            eq.rootElement.height + MathCanvasEquationData.outlineMargin * 2,
+            eq,
             item.item2,
-            onEnd: () {
+            mathCanvasData,
+            onDisappear: () {
               mathCanvasData.editorData.detachWidgetBackground(item.item2);
               mathCanvasData.editorData.finishDataChange();
             },
@@ -74,8 +94,9 @@ class ComponentElevation extends EventSystemComponent {
     _hoveredBackgroundWidgetId =
         mathCanvasData.editorData.attachWidgetBackground(
       _EquationHoveredBackground(
-        eq.rootElement.width + MathCanvasEquationData.outlineMargin,
-        eq.rootElement.height + MathCanvasEquationData.outlineMargin,
+        eq,
+        mathCanvasData.editorData.getNextId(),
+        mathCanvasData,
         durationMilli: 800,
         dashLength: 4.2,
         gapPercent: 1.3,
@@ -149,13 +170,14 @@ class ComponentElevation extends EventSystemComponent {
 }
 
 class _EquationHoveredBackground extends StatefulWidget {
-  final double width;
-  final double height;
   final int durationMilli;
   final double dashLength;
   final double gapPercent;
+  final MathCanvasEquationData eq;
+  final MathCanvasData mathCanvasData;
+  final int id;
 
-  const _EquationHoveredBackground(this.width, this.height,
+  const _EquationHoveredBackground(this.eq, this.id, this.mathCanvasData,
       {this.durationMilli = 500,
       this.dashLength = 3.0,
       this.gapPercent = 1,
@@ -171,8 +193,33 @@ class _EquationHoveredBackgroundState extends State<_EquationHoveredBackground>
     with SingleTickerProviderStateMixin {
   late AnimationController animationController;
 
+  void positionChanged() {
+    widget.mathCanvasData.editorData.updateWidgetBackground(
+      widget.id,
+      _EquationHoveredBackground(
+        widget.eq,
+        widget.id,
+        widget.mathCanvasData,
+        durationMilli: widget.durationMilli,
+        dashLength: widget.dashLength,
+        gapPercent: widget.gapPercent,
+      ),
+      Offset(
+        widget.eq.localX - MathCanvasEquationData.outlineMargin / 2,
+        widget.eq.localY - MathCanvasEquationData.outlineMargin / 2,
+      ),
+    );
+    widget.mathCanvasData.editorData.finishDataChange();
+  }
+
+  void repaint() {
+    setState(() {});
+  }
+
   @override
   void initState() {
+    widget.eq.addRepaintListener(repaint);
+    widget.eq.addPositionChangedListener(positionChanged);
     animationController = AnimationController(
         vsync: this, duration: Duration(milliseconds: widget.durationMilli));
     animationController.addListener(() {
@@ -184,6 +231,8 @@ class _EquationHoveredBackgroundState extends State<_EquationHoveredBackground>
 
   @override
   void dispose() {
+    widget.eq.removeRepaintListener(repaint);
+    widget.eq.removePositionChangedListener(positionChanged);
     animationController.dispose();
     super.dispose();
   }
@@ -191,10 +240,13 @@ class _EquationHoveredBackgroundState extends State<_EquationHoveredBackground>
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      size: Size(widget.width, widget.height),
+      size: Size(
+        widget.eq.rootElement.width + MathCanvasEquationData.outlineMargin,
+        widget.eq.rootElement.height + MathCanvasEquationData.outlineMargin,
+      ),
       painter: _EquationHoveredBackgroundPaint(
-        widget.width,
-        widget.height,
+        widget.eq.rootElement.width + MathCanvasEquationData.outlineMargin,
+        widget.eq.rootElement.height + MathCanvasEquationData.outlineMargin,
         offset: animationController.value,
         dashLength: widget.dashLength,
         gapPercent: widget.gapPercent,
@@ -270,14 +322,16 @@ class _EquationHoveredBackgroundPaint extends CustomPainter {
 
 class _EquationElevationBackground extends StatefulWidget {
   final bool visibility;
-  final double width;
-  final double height;
-  final VoidCallback? onEnd;
+  final MathCanvasEquationData eq;
+  final VoidCallback? onDisappear;
+  final VoidCallback? onEndShadowLerp;
   final int id;
+  final MathCanvasData mathCanvasData;
+  final double shadow;
 
   const _EquationElevationBackground(
-      this.visibility, this.width, this.height, this.id,
-      {this.onEnd});
+      this.visibility, this.eq, this.id, this.mathCanvasData,
+      {this.onDisappear, this.onEndShadowLerp, this.shadow = 1.0});
 
   @override
   State<_EquationElevationBackground> createState() =>
@@ -285,48 +339,104 @@ class _EquationElevationBackground extends StatefulWidget {
 }
 
 class _EquationElevationBackgroundState
-    extends State<_EquationElevationBackground>
-    with SingleTickerProviderStateMixin {
-  double opacity = 0;
-  late AnimationController ac;
-  late Animation<double> tween;
+    extends State<_EquationElevationBackground> with TickerProviderStateMixin {
+  late AnimationController acOpacity;
+  late AnimationController acShadow;
+
+  late Animation<double> tweenOpacity;
+  late Animation<double> tweenShadow;
+
+  void positionChanged() {
+    widget.mathCanvasData.editorData.updateWidgetBackground(
+      widget.id,
+      _EquationElevationBackground(
+        true,
+        widget.eq,
+        widget.id,
+        widget.mathCanvasData,
+        shadow: widget.shadow,
+      ),
+      Offset(
+        widget.eq.localX - MathCanvasEquationData.outlineMargin,
+        widget.eq.localY - MathCanvasEquationData.outlineMargin,
+      ),
+    );
+    widget.mathCanvasData.editorData.finishDataChange();
+  }
+
+  void repaint() {
+    setState(() {});
+  }
 
   @override
   void dispose() {
-    ac.dispose();
+    acOpacity.dispose();
+    acShadow.dispose();
+    widget.eq.removePositionChangedListener(positionChanged);
+    widget.eq.removeRepaintListener(repaint);
     super.dispose();
   }
 
   @override
   void initState() {
-    ac = AnimationController(
+    widget.eq.addPositionChangedListener(positionChanged);
+    widget.eq.addRepaintListener(repaint);
+
+    acOpacity = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 150));
-    ac.value = 0;
-    tween = Tween(begin: 0.0, end: 1.0).animate(ac);
-    tween.addListener(() {
+    acShadow = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 150));
+    acOpacity.value = 0;
+    acShadow.value = 0;
+
+    tweenOpacity = Tween(begin: 0.0, end: 1.0).animate(acOpacity);
+    tweenOpacity.addListener(() {
       setState(() {});
-      if (tween.value == 0 && widget.visibility == false) {
-        if (widget.onEnd != null) {
-          widget.onEnd!();
+      if (tweenOpacity.value == 0 && widget.visibility == false) {
+        if (widget.onDisappear != null) {
+          widget.onDisappear!();
         }
       }
     });
-    ac.forward();
+
+    tweenShadow = Tween(begin: 0.0, end: widget.shadow).animate(acShadow);
+    tweenShadow.addListener(() {
+      setState(() {});
+      if (widget.onEndShadowLerp != null) {
+        widget.onEndShadowLerp!();
+      }
+    });
+
+    acOpacity.forward();
+    acShadow.forward();
+
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant _EquationElevationBackground oldWidget) {
-    if (widget.id != oldWidget.id) {
-      tween = Tween(
+    if (widget.eq != oldWidget.eq) {
+      tweenOpacity = Tween(
               begin: widget.visibility ? 1.0 : 0.0,
               end: widget.visibility ? 1.0 : 0.0)
-          .animate(ac);
+          .animate(acOpacity);
+      tweenShadow =
+          Tween(begin: widget.shadow, end: widget.shadow).animate(acShadow);
+      oldWidget.eq.removePositionChangedListener(positionChanged);
+      oldWidget.eq.removeRepaintListener(repaint);
+      widget.eq.addPositionChangedListener(positionChanged);
+      widget.eq.addRepaintListener(repaint);
     } else {
-      tween = Tween(begin: tween.value, end: widget.visibility ? 1.0 : 0.0)
-          .animate(ac);
-      ac.reset();
-      ac.forward();
+      tweenOpacity =
+          Tween(begin: tweenOpacity.value, end: widget.visibility ? 1.0 : 0.0)
+              .animate(acOpacity);
+      acOpacity.reset();
+      acOpacity.forward();
+
+      tweenShadow =
+          Tween(begin: tweenShadow.value, end: widget.shadow).animate(acShadow);
+      acShadow.reset();
+      acShadow.forward();
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -334,17 +444,19 @@ class _EquationElevationBackgroundState
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: tween.value,
+      opacity: tweenOpacity.value,
       child: Container(
-        width: widget.width,
-        height: widget.height,
+        width: widget.eq.rootElement.width +
+            MathCanvasEquationData.outlineMargin * 2,
+        height: widget.eq.rootElement.height +
+            MathCanvasEquationData.outlineMargin * 2,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.all(Radius.circular(10)),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withAlpha(180),
-              blurRadius: 10,
+              blurRadius: 10 * tweenShadow.value,
               spreadRadius: 1.5,
             ),
           ],

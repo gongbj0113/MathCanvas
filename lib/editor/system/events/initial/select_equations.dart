@@ -7,7 +7,9 @@ import 'package:math_canvas/editor/system/event_system.dart';
 import 'package:math_canvas/editor/system/events/initial/editor_translate.dart';
 
 import '../../components/cursor_component.dart';
+import '../../components/scale_indicator_component.dart';
 import '../../keyboard_system.dart';
+import 'editor_mouse.dart';
 
 class SelectEquationsEventStack extends EventStack {
   MathCanvasEquationData selectedEquation;
@@ -17,13 +19,14 @@ class SelectEquationsEventStack extends EventStack {
   @override
   void initialize() {
     findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
+    findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
     findComponentAsType<ComponentCursor>()!.unFocus();
 
     var event = _SelectEquationsEvent();
     addEvent(event);
-    addEvent(EditorScalingEvent());
-
     event.selectEquation(selectedEquation);
+
+    addEvent(EditorScalingEvent());
     super.initialize();
   }
 }
@@ -63,6 +66,7 @@ class _SelectEquationsEvent extends Event {
   bool mDrag = false;
   double preMx = 0;
   double preMy = 0;
+  MouseInteractedData? interactedDown;
 
   @override
   void mouseDown(double dx, double dy) {
@@ -70,11 +74,11 @@ class _SelectEquationsEvent extends Event {
     preMx = dx;
     preMy = dy;
 
-    Offset local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
-    var cursor =
-        findComponentAsType<ComponentCursor>()!.findNearCursorPosition(local);
+    interactedDown = MouseInteractedData(
+        findComponentAsType<ComponentCursor>()!, mathCanvasData, dx, dy);
 
-    if (cursor != null && !shiftDown) {
+    if (interactedDown!.cursor != null &&
+        !selectedEquations.contains(interactedDown!.cursor!.rootEquation)) {
       closeEventStack(true);
       return;
     }
@@ -83,53 +87,47 @@ class _SelectEquationsEvent extends Event {
   @override
   void mouseMove(double dx, double dy) {
     if (!mDown) {
-      var local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
-      var cursorPos =
-          findComponentAsType<ComponentCursor>()!.findNearCursorPosition(local);
-      var nearEquation =
-          findComponentAsType<ComponentCursor>()!.findNearEquationBorder(local);
-
-      if (shiftDown) {
-        if (nearEquation != null) {
+      var interaction = MouseInteractedData(
+          findComponentAsType<ComponentCursor>()!, mathCanvasData, dx, dy);
+      if (interaction.nearEquation != null) {
+        findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
+        if (!selectedEquations.contains(interaction.nearEquation!)) {
+          findComponentAsType<ComponentElevation>()!
+              .hoverEquation(interaction.nearEquation!);
+        }
+      } else if (interaction.cursor != null) {
+        if (shiftDown) {
           findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-          if (!selectedEquations.contains(nearEquation)) {
+          if (!selectedEquations.contains(interaction.cursor!.rootEquation)) {
             findComponentAsType<ComponentElevation>()!
-                .hoverEquation(nearEquation);
-          }
-        } else if (cursorPos != null) {
-          findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-          if (!selectedEquations.contains(cursorPos.rootEquation)) {
-            findComponentAsType<ComponentElevation>()!
-                .hoverEquation(cursorPos.rootEquation);
+                .hoverEquation(interaction.cursor!.rootEquation);
           }
         } else {
-          findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
           findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
+          if (!selectedEquations.contains(interaction.cursor!.rootEquation)) {
+            findComponentAsType<ComponentElevation>()!
+                .showElevatedCursor(interaction.cursor!);
+          }
         }
       } else {
-        if (nearEquation != null) {
-          findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-          if (!selectedEquations.contains(nearEquation)) {
-            findComponentAsType<ComponentElevation>()!
-                .hoverEquation(nearEquation);
-          }
-        } else if (cursorPos != null) {
-          findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
-          if (!selectedEquations.contains(cursorPos.rootEquation)) {
-            findComponentAsType<ComponentElevation>()!
-                .showElevatedCursor(cursorPos);
-          }
-        } else {
-          findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-          findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
-        }
+        findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
+        findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
       }
     } else {
       var deltaX = dx - preMx;
       var deltaY = dy - preMy;
       if (deltaY.abs() > 0.1 || deltaX.abs() > 0.1) {
         mDrag = true;
-        startNewEventStack(EditorMovingEventStack(preMx, preMy));
+        if ((interactedDown!.nearEquation != null &&
+                selectedEquations.contains(interactedDown!.nearEquation!)) ||
+            (interactedDown!.cursor != null &&
+                selectedEquations
+                    .contains(interactedDown!.cursor!.rootEquation))) {
+          startNewEventStack(_DragSelectedEquationsEventStack(
+              preMx, preMy, selectedEquations));
+        } else {
+          startNewEventStack(EditorMovingEventStack(preMx, preMy));
+        }
       }
     }
   }
@@ -137,57 +135,60 @@ class _SelectEquationsEvent extends Event {
   @override
   void mouseUp(double dx, double dy) {
     if (!mDrag) {
-      Offset local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
+      interactedDown ??= MouseInteractedData(
+          findComponentAsType<ComponentCursor>()!, mathCanvasData, dx, dy);
 
-      MathCanvasEquationData? nearEquation =
-          findComponentAsType<ComponentCursor>()!.findNearEquationBorder(local);
-      CursorPosition? cursor =
-          findComponentAsType<ComponentCursor>()!.findNearCursorPosition(local);
       findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
       if (shiftDown) {
-        if (nearEquation != null) {
-          if (selectedEquations.contains(nearEquation)) {
-            dismissSelectedEquation(nearEquation);
-            if(selectedEquations.isEmpty){
+        if (interactedDown!.nearEquation != null) {
+          if (selectedEquations.contains(interactedDown!.nearEquation!)) {
+            dismissSelectedEquation(interactedDown!.nearEquation!);
+            if (selectedEquations.isEmpty) {
               closeEventStack(false);
               return;
             }
           } else {
-            selectEquation(nearEquation);
+            selectEquation(interactedDown!.nearEquation!);
           }
-        } else if (cursor != null) {
-          if (selectedEquations.contains(cursor.rootEquation)) {
-            dismissSelectedEquation(cursor.rootEquation);
-            if(selectedEquations.isEmpty){
+        } else if (interactedDown!.cursor != null) {
+          if (selectedEquations
+              .contains(interactedDown!.cursor!.rootEquation)) {
+            dismissSelectedEquation(interactedDown!.cursor!.rootEquation);
+            if (selectedEquations.isEmpty) {
               closeEventStack(false);
               return;
             }
           } else {
-            selectEquation(cursor.rootEquation);
+            selectEquation(interactedDown!.cursor!.rootEquation);
           }
         } else {
           closeEventStack(false);
         }
       } else {
-        if (nearEquation != null) {
-          if (selectedEquations.contains(nearEquation)) {
+        if (interactedDown!.nearEquation != null) {
+          if (selectedEquations.contains(interactedDown!.nearEquation!)) {
             var toDismiss = [];
             for (var eq in selectedEquations) {
-              if (eq != nearEquation) toDismiss.add(eq);
+              if (eq != interactedDown!.nearEquation) toDismiss.add(eq);
             }
             for (var eq in toDismiss) {
               dismissSelectedEquation(eq);
             }
           } else {
             dismissAllSelectedEquations();
-            selectEquation(nearEquation);
+            selectEquation(interactedDown!.nearEquation!);
           }
         } else {
+          if (interactedDown!.cursor != null) {
+            findComponentAsType<ComponentCursor>()!
+                .focusTo(interactedDown!.cursor!);
+            findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
+          }
           dismissAllSelectedEquations();
           closeEventStack(false);
         }
       }
-    }
+    } else {}
     mDown = false;
     mDrag = false;
   }
@@ -211,5 +212,91 @@ class _SelectEquationsEvent extends Event {
     if (key.logicalKey == LogicalKeyboardKey.shiftLeft) {
       shiftDown = false;
     }
+  }
+}
+
+class _DragSelectedEquationsEventStack extends EventStack {
+  double preMx;
+  double preMy;
+  List<MathCanvasEquationData> selectedEquations;
+
+  _DragSelectedEquationsEventStack(
+      this.preMx, this.preMy, this.selectedEquations);
+
+  @override
+  void initialize() {
+    addEvent(_DragSelectedEquationsEvent(preMx, preMy, selectedEquations));
+    super.initialize();
+  }
+}
+
+class _DragSelectedEquationsEvent extends Event {
+  double preMx;
+  double preMy;
+  List<MathCanvasEquationData> selectedEquations;
+
+  _DragSelectedEquationsEvent(this.preMx, this.preMy, this.selectedEquations);
+
+  List<Offset> prePos = [];
+  double preEx = 0;
+  double preEy = 0;
+
+  bool applied = false;
+
+  @override
+  void initialize() {
+    for (int i = 0; i < selectedEquations.length; i++) {
+      prePos.add(
+          Offset(selectedEquations[i].anchorX, selectedEquations[i].anchorY));
+      findComponentAsType<ComponentElevation>()!.elevateEquation(
+        selectedEquations[i],
+        shadowStrength: 2.5,
+        finishDataChange: true,
+        onEndShadowLerp: () {
+          applied = true;
+        },
+      );
+    }
+    mathCanvasData.editorData.finishDataChange();
+    super.initialize();
+  }
+
+  @override
+  void mouseExistEditor() {
+    closeEventStack(true);
+  }
+
+  @override
+  void mouseUp(double dx, double dy) {
+    for (int i = 0; i < selectedEquations.length; i++) {
+      findComponentAsType<ComponentElevation>()!.elevateEquation(
+          selectedEquations[i],
+          shadowStrength: 1.0,
+          finishDataChange: false);
+    }
+    mathCanvasData.editorData.finishDataChange();
+    closeEventStack(true);
+  }
+
+  @override
+  void mouseMove(double dx, double dy) {
+    var deltaX = dx - preMx;
+    var deltaY = dy - preMy;
+    if (applied) {
+      for (int i = 0; i < selectedEquations.length; i++) {
+        selectedEquations[i].anchorPos = Offset(
+            prePos[i].dx + deltaX / mathCanvasData.editorData.scale,
+            prePos[i].dy + deltaY / mathCanvasData.editorData.scale);
+      }
+      mathCanvasData.editorData.finishDataChange();
+    }
+  }
+
+  @override
+  void mouseWheel(Offset scrollDelta, double dx, double dy) {
+    //Todo : make scaling from center origin.
+    mathCanvasData.editorData.scale -= scrollDelta.dy / 1000;
+    findComponentAsType<ComponentScaleIndicator>()!.updateScaleIndicator();
+    mathCanvasData.editorData.finishDataChange();
   }
 }

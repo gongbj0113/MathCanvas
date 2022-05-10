@@ -7,6 +7,21 @@ import 'package:math_canvas/editor/system/events/initial/editor_translate.dart';
 import 'package:math_canvas/editor/system/event_system.dart';
 import 'package:math_canvas/editor/system/events/initial/select_equations.dart';
 
+class MouseInteractedData {
+  late Offset global;
+  late Offset local;
+  MathCanvasEquationData? nearEquation;
+  CursorPosition? cursor;
+
+  MouseInteractedData(ComponentCursor componentCursor,
+      MathCanvasData mathCanvasData, double mx, double my) {
+    global = Offset(mx, my);
+    local = mathCanvasData.editorData.globalToLocal(global);
+    nearEquation = componentCursor.findNearEquationBorder(local);
+    cursor = componentCursor.findNearCursorPosition(local);
+  }
+}
+
 class EditorMouseEvent extends Event {
   EditorMouseEvent();
 
@@ -14,12 +29,15 @@ class EditorMouseEvent extends Event {
   bool mDrag = false;
   double preMx = 0;
   double preMy = 0;
+  MouseInteractedData? interactedDown;
 
   @override
   void mouseDown(double dx, double dy) {
     mDown = true;
     preMx = dx;
     preMy = dy;
+    interactedDown = MouseInteractedData(
+        findComponentAsType<ComponentCursor>()!, mathCanvasData, dx, dy);
   }
 
   @override
@@ -31,22 +49,19 @@ class EditorMouseEvent extends Event {
   void mouseUp(double dx, double dy) {
     if (mDrag == false) {
       // it's just tap event.
-      Offset local = mathCanvasData.editorData.globalToLocal(Offset(dx, dy));
+      interactedDown ??= MouseInteractedData(
+          findComponentAsType<ComponentCursor>()!, mathCanvasData, dx, dy);
 
-      MathCanvasEquationData? nearEquation =
-      findComponentAsType<ComponentCursor>()!.findNearEquationBorder(local);
-      var cursor =
-      findComponentAsType<ComponentCursor>()!.findNearCursorPosition(local);
-
-      if (nearEquation != null) {
-        startNewEventStack(SelectEquationsEventStack(nearEquation));
-      }
-      else if (cursor != null) {
-        findComponentAsType<ComponentCursor>()!.focusTo(cursor);
+      if (interactedDown!.nearEquation != null) {
+        startNewEventStack(
+            SelectEquationsEventStack(interactedDown!.nearEquation!));
+      } else if (interactedDown!.cursor != null) {
+        findComponentAsType<ComponentCursor>()!
+            .focusTo(interactedDown!.cursor!);
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
       } else {
         startNewEventStack(
-            EditorAddNewEquationEventStack(local.dx, local.dy, 20));
+            EditorAddNewEquationEventStack(interactedDown!.local.dx, interactedDown!.local.dy, 20));
       }
     }
     mDown = false;
@@ -89,19 +104,15 @@ class EditorMouseHoverEvent extends Event {
   @override
   void mouseMove(double dx, double dy) {
     if (!mDown) {
-      CursorPosition? cursorPos = findComponentAsType<ComponentCursor>()!
-          .findNearCursorPosition(
-          mathCanvasData.editorData.globalToLocal(Offset(dx, dy)));
-      MathCanvasEquationData? nearEquation =
-      findComponentAsType<ComponentCursor>()!.findNearEquationBorder(
-          mathCanvasData.editorData.globalToLocal(Offset(dx, dy)));
+      var interaction = MouseInteractedData(
+          findComponentAsType<ComponentCursor>()!, mathCanvasData, dx, dy);
 
-      if (nearEquation != null) {
+      if (interaction.nearEquation != null) {
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-        findComponentAsType<ComponentElevation>()!.hoverEquation(nearEquation);
-      } else if (cursorPos != null) {
+        findComponentAsType<ComponentElevation>()!.hoverEquation(interaction.nearEquation!);
+      } else if (interaction.cursor != null) {
         findComponentAsType<ComponentElevation>()!
-            .showElevatedCursor(cursorPos);
+            .showElevatedCursor(interaction.cursor!);
         findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
       } else {
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();

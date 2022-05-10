@@ -161,8 +161,8 @@ class EventStack extends UserEventReceiver {
 
   void addEvent(Event event) {
     event._parentStack = this;
-    _events.add(event);
     event.initialize();
+    _events.add(event);
   }
 
   void startNewDataEvent(DataEvent dataEvent) {
@@ -346,8 +346,8 @@ class EventSystem extends UserEventReceiver {
 
   void addComponent(EventSystemComponent component) {
     component._eventSystem = this;
-    _components.add(component);
     component.initialize();
+    _components.add(component);
   }
 
   void removeComponent(EventSystemComponent component) {
@@ -421,8 +421,8 @@ class EventSystem extends UserEventReceiver {
   void addEventStack(EventStack eventStack, {String? tag}) {
     eventStack._eventSystem = this;
     eventStack.tag = tag;
-    _eventStack.add(eventStack);
     eventStack.initialize();
+    _eventStack.add(eventStack);
   }
 
   // Return the Top EventStack.

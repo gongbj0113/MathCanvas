@@ -148,7 +148,7 @@ class ComponentCursor extends EventSystemComponent {
   CursorPosition? findNearCursorPosition(Offset localPosition) {
     for (int i = 0; i < mathCanvasData.equationData.length; i++) {
       if (mathCanvasData.equationData[i].isPointContained(localPosition)) {
-        print("START equationData : $i");
+        //print("START equationData : $i");
         List<int> pos = [];
         double curX = mathCanvasData.equationData[i].localX;
         double curY = mathCanvasData.equationData[i].localY;
@@ -169,7 +169,7 @@ class ComponentCursor extends EventSystemComponent {
                         horizontalParent.childElements[j].position.x +
                             horizontalParent.childElements[j].children!.width) {
                   pos.add(j);
-                  print("add : $j");
+                  //print("add : $j");
                   curX += horizontalParent.childElements[j].position.x;
                   curY += horizontalParent.childElements[j].position.y;
                   parent = horizontalParent.childElements[j].children!;
@@ -181,18 +181,18 @@ class ComponentCursor extends EventSystemComponent {
                                 .childElements[j - 1].children!.width) {
                   if (horizontalParent.childElements[j - 1].children!
                       is ElementLayout) {
-                    print("add : ${j - 1}");
+                    //print("add : ${j - 1}");
                     pos.add(j - 1);
                     curX += horizontalParent.childElements[j - 1].position.x;
                     curY += horizontalParent.childElements[j - 1].position.y;
                     parent = horizontalParent.childElements[j - 1].children!;
                   } else {
-                    print("add : $j");
+                    //print("add : $j");
                     pos.add(j);
                     parent = horizontalParent.childElements[j - 1].children!;
                   }
                 } else {
-                  print("add : $j");
+                  //print("add : $j");
                   pos.add(j);
                   return CursorPosition(mathCanvasData.equationData[i], pos);
                 }
@@ -200,7 +200,7 @@ class ComponentCursor extends EventSystemComponent {
               }
             }
             if (!finded) {
-              print("add : ${horizontalParent.childElements.length}");
+              //print("add : ${horizontalParent.childElements.length}");
               pos.add(horizontalParent.childElements.length);
               return CursorPosition(mathCanvasData.equationData[i], pos);
             }
@@ -365,6 +365,16 @@ class _CursorWidgetState extends State<CursorWidget>
       _animationController.value = 1.0;
     }
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant CursorWidget oldWidget) {
+    if (!widget.elevated) {
+      _animationController.repeat(reverse: true);
+    } else {
+      _animationController.value = 1.0;
+    }
+    super.didUpdateWidget(oldWidget);
   }
 
   @override

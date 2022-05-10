@@ -58,7 +58,7 @@ class MathCanvasEditorData {
   int attachWidgetForeground(Widget widget, Offset position,
       {bool local = true}) {
     int newId = idCount + 1;
-    idCount ++;
+    idCount++;
     _additionalWidgetForeground
         .add(_AdditionalWidget(newId, widget, position, local));
     return newId;
@@ -86,13 +86,14 @@ class MathCanvasEditorData {
     print("Update: There is no attached Foreground Widget with id : $id");
   }
 
-  int getNextId(){
+  int getNextId() {
     return idCount + 1;
   }
+
   int attachWidgetBackground(Widget widget, Offset position,
       {bool local = true}) {
     int newId = idCount + 1;
-    idCount ++;
+    idCount++;
     _additionalWidgetBackground
         .add(_AdditionalWidget(newId, widget, position, local));
     return newId;
@@ -147,17 +148,41 @@ class MathCanvasEquationData {
   final Element rootElement;
 
   //position of the anchor inside the editor
-  double anchorX;
-  double anchorY;
+  double _anchorX;
+  double _anchorY;
+
+  double get anchorX => _anchorX;
+  double get anchorY => _anchorY;
+
+  set anchorX(double value) {
+    _anchorX = value;
+    requestPositionChanged();
+  }
+
+  set anchorY(double value) {
+    _anchorY = value;
+    requestPositionChanged();
+  }
+
+  Offset get anchorPos => Offset(anchorX, anchorY);
+
+  set anchorPos(Offset value) {
+    _anchorX = value.dx;
+    _anchorY = value.dy;
+    requestPositionChanged();
+  }
 
   double get localX => anchorX - rootElement.anchorPoint.x;
 
   double get localY => anchorY - rootElement.anchorPoint.y;
 
   MathCanvasEquationData(this.rootElement,
-      {this.anchorX = 0, this.anchorY = 0});
+      {double anchorX = 0, double anchorY = 0})
+      : _anchorX = anchorX,
+        _anchorY = anchorY;
 
   final List<void Function()?> _repaint = [];
+  final List<void Function()?> _positionChanged = [];
 
   bool isPointContained(Offset position) {
     return position.dx > localX &&
@@ -183,19 +208,37 @@ class MathCanvasEquationData {
                 position.dx < localX + rootElement.width + outlineMargin));
   }
 
-  void addDataChangedListener(void Function() onRepaintRequest) {
+  void addRepaintListener(void Function() onRepaintRequest) {
     if (!_repaint.contains(onRepaintRequest)) {
       _repaint.add(onRepaintRequest);
     }
   }
 
-  void removeDataChangedListener(void Function() onRepaintRequest) {
+  void removeRepaintListener(void Function() onRepaintRequest) {
     _repaint.remove(onRepaintRequest);
+  }
+
+  void addPositionChangedListener(void Function() onPositionChangedRequest) {
+    if (!_positionChanged.contains(onPositionChangedRequest)) {
+      _positionChanged.add(onPositionChangedRequest);
+    }
+  }
+
+  void removePositionChangedListener(void Function() onPositionChangedRequest) {
+    _positionChanged.remove(onPositionChangedRequest);
   }
 
   void requestRepaint() {
     rootElement.layout();
     for (var f in _repaint) {
+      if (f != null) {
+        f();
+      }
+    }
+  }
+
+  void requestPositionChanged() {
+    for (var f in _positionChanged) {
       if (f != null) {
         f();
       }

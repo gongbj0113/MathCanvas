@@ -34,6 +34,7 @@ class _MathCanvasWidgetState extends State<MathCanvasWidget>
         .attachDataChangedListener(() => setState(() {}));
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -186,13 +187,13 @@ class _MathCanvasEquationWidgetState extends State<MathCanvasEquationWidget> {
 
   @override
   void initState() {
-    widget.mathCanvasEquationData.addDataChangedListener(rePaint);
+    widget.mathCanvasEquationData.addRepaintListener(rePaint);
     super.initState();
   }
 
   @override
   void dispose() {
-    widget.mathCanvasEquationData.removeDataChangedListener(rePaint);
+    widget.mathCanvasEquationData.removeRepaintListener(rePaint);
     super.dispose();
   }
   @override
