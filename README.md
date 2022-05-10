@@ -13,8 +13,8 @@ https://gongbj0113.github.io/MathCanvas/
 + [√] MathCanvas Editor : Drag to Move, Scroll to change scale, render mathEquations, render additional widgets
 + [√] Keyboard typing to write a math equation
 + [√] Mouse hovering on the equation and click on it to move the Cursor there
-! [Working] Mouse hover and Drag Equation border to change equation position
-- [] Add subscript, superscript layout and support them on editor
++ [√] Mouse hover and Drag Equation border to change equation position
+! [Working] Add subscript, superscript layout and support them on editor
 - [] Add fraction layout and support them on editor
 - [] Support mathmatical font
 ...
