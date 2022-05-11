@@ -47,6 +47,8 @@ class ComponentElevation extends EventSystemComponent {
         eq,
         mathCanvasData.editorData.getNextId(),
         mathCanvasData,
+        shadow: shadowStrength,
+        onEndShadowLerp: onEndShadowLerp,
       ),
       Offset(
         eq.localX - MathCanvasEquationData.outlineMargin,
@@ -72,6 +74,7 @@ class ComponentElevation extends EventSystemComponent {
               mathCanvasData.editorData.detachWidgetBackground(item.item2);
               mathCanvasData.editorData.finishDataChange();
             },
+            shadow: 0,
           ),
           Offset(
             eq.localX - MathCanvasEquationData.outlineMargin,
@@ -445,21 +448,24 @@ class _EquationElevationBackgroundState
   Widget build(BuildContext context) {
     return Opacity(
       opacity: tweenOpacity.value,
-      child: Container(
-        width: widget.eq.rootElement.width +
-            MathCanvasEquationData.outlineMargin * 2,
-        height: widget.eq.rootElement.height +
-            MathCanvasEquationData.outlineMargin * 2,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.all(Radius.circular(10)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withAlpha(180),
-              blurRadius: 10 * tweenShadow.value,
-              spreadRadius: 1.5,
-            ),
-          ],
+      child: Transform.scale(
+        scale: (tweenShadow.value - 1.0) / 18 + 1.0,
+        child: Container(
+          width: widget.eq.rootElement.width +
+              MathCanvasEquationData.outlineMargin * 2,
+          height: widget.eq.rootElement.height +
+              MathCanvasEquationData.outlineMargin * 2,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.all(Radius.circular(10)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withAlpha(180),
+                blurRadius: 10 * tweenShadow.value,
+                spreadRadius: 1.5,
+              ),
+            ],
+          ),
         ),
       ),
     );

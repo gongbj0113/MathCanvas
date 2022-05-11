@@ -60,8 +60,8 @@ class EditorMouseEvent extends Event {
             .focusTo(interactedDown!.cursor!);
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
       } else {
-        startNewEventStack(
-            EditorAddNewEquationEventStack(interactedDown!.local.dx, interactedDown!.local.dy, 20));
+        startNewEventStack(EditorAddNewEquationEventStack(
+            interactedDown!.local.dx, interactedDown!.local.dy, 20));
       }
     }
     mDown = false;
@@ -73,12 +73,28 @@ class EditorMouseEvent extends Event {
   @override
   void mouseMove(double dx, double dy) {
     if (mDown) {
-      var deltaX = dx - preMx;
-      var deltaY = dy - preMy;
-      if (deltaY.abs() > 0.1 || deltaX.abs() > 0.1) {
-        mDrag = true;
-        startNewEventStack(EditorMovingEventStack(preMx, preMy));
+      if (interactedDown!.cursor != null) {
+      } else {
+        var deltaX = dx - preMx;
+        var deltaY = dy - preMy;
+        if (deltaY.abs() > 0.1 || deltaX.abs() > 0.1) {
+          mDrag = true;
+          if (interactedDown!.nearEquation != null) {
+            startNewEventStack(DragSelectedEquationsEventStack(
+                preMx, preMy, [interactedDown!.nearEquation!],
+                dismissOnEnd: true), tag: "drag_elevation");
+          } else {
+            startNewEventStack(EditorMovingEventStack(preMx, preMy));
+          }
+        }
       }
+    }
+  }
+
+  @override
+  void onEventStackResultReceived(result, String? tag) {
+    if(tag == "drag_elevation"){
+      findComponentAsType<ComponentElevation>()!.hoverEquation((result as List)[0]);
     }
   }
 }
@@ -109,7 +125,8 @@ class EditorMouseHoverEvent extends Event {
 
       if (interaction.nearEquation != null) {
         findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
-        findComponentAsType<ComponentElevation>()!.hoverEquation(interaction.nearEquation!);
+        findComponentAsType<ComponentElevation>()!
+            .hoverEquation(interaction.nearEquation!);
       } else if (interaction.cursor != null) {
         findComponentAsType<ComponentElevation>()!
             .showElevatedCursor(interaction.cursor!);

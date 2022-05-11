@@ -78,7 +78,8 @@ class _SelectEquationsEvent extends Event {
         findComponentAsType<ComponentCursor>()!, mathCanvasData, dx, dy);
 
     if (interactedDown!.cursor != null &&
-        !selectedEquations.contains(interactedDown!.cursor!.rootEquation)) {
+        !selectedEquations.contains(interactedDown!.cursor!.rootEquation) &&
+        !shiftDown) {
       closeEventStack(true);
       return;
     }
@@ -119,13 +120,18 @@ class _SelectEquationsEvent extends Event {
       if (deltaY.abs() > 0.1 || deltaX.abs() > 0.1) {
         mDrag = true;
         if ((interactedDown!.nearEquation != null &&
-                selectedEquations.contains(interactedDown!.nearEquation!)) ||
+            selectedEquations.contains(interactedDown!.nearEquation!)) ||
             (interactedDown!.cursor != null &&
                 selectedEquations
                     .contains(interactedDown!.cursor!.rootEquation))) {
-          startNewEventStack(_DragSelectedEquationsEventStack(
+          startNewEventStack(DragSelectedEquationsEventStack(
               preMx, preMy, selectedEquations));
-        } else {
+        } else if(interactedDown!.nearEquation != null) {
+          dismissAllSelectedEquations();
+          selectEquation(interactedDown!.nearEquation!);
+          startNewEventStack(DragSelectedEquationsEventStack(
+              preMx, preMy, selectedEquations));
+        }else{
           startNewEventStack(EditorMovingEventStack(preMx, preMy));
         }
       }
@@ -140,6 +146,7 @@ class _SelectEquationsEvent extends Event {
 
       findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
       if (shiftDown) {
+        // Shift
         if (interactedDown!.nearEquation != null) {
           if (selectedEquations.contains(interactedDown!.nearEquation!)) {
             dismissSelectedEquation(interactedDown!.nearEquation!);
@@ -165,6 +172,7 @@ class _SelectEquationsEvent extends Event {
           closeEventStack(false);
         }
       } else {
+        //Not Shift
         if (interactedDown!.nearEquation != null) {
           if (selectedEquations.contains(interactedDown!.nearEquation!)) {
             var toDismiss = [];
@@ -180,12 +188,28 @@ class _SelectEquationsEvent extends Event {
           }
         } else {
           if (interactedDown!.cursor != null) {
-            findComponentAsType<ComponentCursor>()!
-                .focusTo(interactedDown!.cursor!);
-            findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
+            if (!selectedEquations
+                .contains(interactedDown!.cursor!.rootEquation)) {
+              findComponentAsType<ComponentCursor>()!
+                  .focusTo(interactedDown!.cursor!);
+              findComponentAsType<ComponentElevation>()!.hideElevatedCursor();
+              dismissAllSelectedEquations();
+              closeEventStack(false);
+            } else {
+              var toDismiss = [];
+              for (var eq in selectedEquations) {
+                if (eq != interactedDown!.cursor!.rootEquation) {
+                  toDismiss.add(eq);
+                }
+              }
+              for (var eq in toDismiss) {
+                dismissSelectedEquation(eq);
+              }
+            }
+          } else {
+            dismissAllSelectedEquations();
+            closeEventStack(false);
           }
-          dismissAllSelectedEquations();
-          closeEventStack(false);
         }
       }
     } else {}
@@ -215,17 +239,20 @@ class _SelectEquationsEvent extends Event {
   }
 }
 
-class _DragSelectedEquationsEventStack extends EventStack {
+class DragSelectedEquationsEventStack extends EventStack {
   double preMx;
   double preMy;
   List<MathCanvasEquationData> selectedEquations;
+  bool dismissOnEnd;
 
-  _DragSelectedEquationsEventStack(
-      this.preMx, this.preMy, this.selectedEquations);
+  DragSelectedEquationsEventStack(this.preMx, this.preMy,
+      this.selectedEquations,
+      {this.dismissOnEnd = false});
 
   @override
   void initialize() {
-    addEvent(_DragSelectedEquationsEvent(preMx, preMy, selectedEquations));
+    addEvent(_DragSelectedEquationsEvent(preMx, preMy, selectedEquations,
+        dismissOnEnd: dismissOnEnd));
     super.initialize();
   }
 }
@@ -234,8 +261,10 @@ class _DragSelectedEquationsEvent extends Event {
   double preMx;
   double preMy;
   List<MathCanvasEquationData> selectedEquations;
+  bool dismissOnEnd;
 
-  _DragSelectedEquationsEvent(this.preMx, this.preMy, this.selectedEquations);
+  _DragSelectedEquationsEvent(this.preMx, this.preMy, this.selectedEquations,
+      {this.dismissOnEnd = false});
 
   List<Offset> prePos = [];
   double preEx = 0;
@@ -245,6 +274,9 @@ class _DragSelectedEquationsEvent extends Event {
 
   @override
   void initialize() {
+    findComponentAsType<ComponentElevation>()!.dismissHoverEquations();
+    findComponentAsType<ComponentCursor>()!.unFocus();
+
     for (int i = 0; i < selectedEquations.length; i++) {
       prePos.add(
           Offset(selectedEquations[i].anchorX, selectedEquations[i].anchorY));
@@ -269,13 +301,19 @@ class _DragSelectedEquationsEvent extends Event {
   @override
   void mouseUp(double dx, double dy) {
     for (int i = 0; i < selectedEquations.length; i++) {
-      findComponentAsType<ComponentElevation>()!.elevateEquation(
-          selectedEquations[i],
-          shadowStrength: 1.0,
-          finishDataChange: false);
+      if (!dismissOnEnd) {
+        findComponentAsType<ComponentElevation>()!.elevateEquation(
+            selectedEquations[i],
+            shadowStrength: 1.0,
+            finishDataChange: false);
+      } else {
+        findComponentAsType<ComponentElevation>()!.dismissElevatedEquation(
+            selectedEquations[i],
+            finishDataChange: false);
+      }
     }
     mathCanvasData.editorData.finishDataChange();
-    closeEventStack(true);
+    closeEventStackWithResult(selectedEquations, true);
   }
 
   @override
